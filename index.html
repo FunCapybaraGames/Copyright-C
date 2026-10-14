@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7f2">
+  <title>Capybara.Games — Play something great</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="#" aria-label="Capybara Games home">
+      <span class="brand-mark">c<span>.</span></span>
+      <span>capybara<span class="brand-light">.games</span></span>
+    </a>
+    <div class="sidebar-label">DISCOVER</div>
+    <nav class="nav-list" aria-label="Main navigation">
+      <button class="nav-link active" data-view="All"><span class="nav-icon">⌂</span>Home</button>
+      <button class="nav-link" data-view="Adventure"><span class="nav-icon">✧</span>Adventure</button>
+      <button class="nav-link" data-view="Arcade"><span class="nav-icon">▦</span>Arcade</button>
+      <button class="nav-link" data-view="Puzzle"><span class="nav-icon">◈</span>Puzzle</button>
+      <button class="nav-link" data-view="3D"><span class="nav-icon">◇</span>3D worlds <span class="nav-count">NEW</span></button>
+    </nav>
+    <div class="sidebar-label personal-label">YOUR SPACE</div>
+    <nav class="nav-list" aria-label="Your games">
+      <button class="nav-link" data-view="My Games"><span class="nav-icon">▣</span>My games</button>
+      <button class="nav-link" data-view="Favorites"><span class="nav-icon">♡</span>Favorites <span id="favorite-count" class="nav-count">0</span></button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="side-card">
+        <div class="side-card-orb">✦</div>
+        <div class="side-card-title">Your next favorite?</div>
+        <p>Fresh little worlds, made to play right here.</p>
+        <button id="surprise-button" class="side-card-button">Surprise me ↗</button>
+      </div>
+      <div class="sidebar-foot"><span class="status-dot"></span> All games run in your browser</div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <button id="mobile-menu" class="icon-button mobile-menu" aria-label="Open menu">☰</button>
+      <div class="breadcrumb">PLAYGROUND <span>/</span> <strong id="breadcrumb-current">Home</strong></div>
+      <label class="search-box"><span class="search-icon">⌕</span><input id="search-input" type="search" placeholder="Find your next game…" autocomplete="off"><kbd>/</kbd></label>
+      <button id="settings-open" class="settings-button" aria-label="Open settings"><span>⚙</span><span class="settings-label">Settings</span></button>
+      <div class="profile-chip"><span class="profile-avatar">G</span><span id="profile-name">Guest</span></div><button id="auth-button" class="settings-button">Log in</button>
+    </header>
+
+    <div class="page-content">
+      <section class="welcome-row">
+        <div class="welcome-copy">
+          <div class="eyebrow"><span class="live-dot"></span> YOUR PERSONAL PLAYGROUND</div>
+          <h1>A little escape.<br><span>A lot of fun.</span></h1>
+          <p class="welcome-description">Discover tiny adventures, arcade challenges, and strange little worlds — all made to play right here.</p>
+          <button id="browse-button" class="button button-primary">Explore games <span>↘</span></button>
+          <div class="micro-proof"><span class="proof-stars">✳ ✳ ✳</span> Indie spirit. No downloads. Just play.</div>
+        </div>
+        <div class="hero-art" aria-label="Illustration of a capybara exploring a green valley">
+          <svg viewBox="0 0 700 390" role="img" aria-hidden="true">
+            <defs>
+              <linearGradient id="heroSky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#c9e8d6"/><stop offset="1" stop-color="#f4edcf"/></linearGradient>
+              <linearGradient id="heroHill" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8fc49a"/><stop offset="1" stop-color="#5c9b77"/></linearGradient>
+            </defs>
+            <rect width="700" height="390" fill="url(#heroSky)"/>
+            <circle cx="540" cy="82" r="43" fill="#f4cb78"/>
+            <circle cx="540" cy="82" r="59" fill="#f4cb78" opacity=".18"/>
+            <path d="M0 238 112 102 220 230 355 78 520 250 630 130 700 205V390H0Z" fill="#a7cdb0"/>
+            <path d="M0 276 156 185 278 270 435 160 590 279 700 212V390H0Z" fill="#7db28c"/>
+            <path d="M0 310Q155 252 280 315T530 302T700 294V390H0Z" fill="url(#heroHill)"/>
+            <path d="M0 344Q150 305 280 350T700 334V390H0Z" fill="#4d8967"/>
+            <g class="hero-capy"><g transform="translate(295 217)">
+              <ellipse cx="55" cy="93" rx="75" ry="12" fill="#315d45" opacity=".2"/>
+              <ellipse cx="55" cy="63" rx="59" ry="43" fill="#a9764e"/>
+              <ellipse cx="26" cy="29" rx="37" ry="34" fill="#ba895e"/>
+              <ellipse cx="2" cy="43" rx="23" ry="17" fill="#d5a67b"/>
+              <ellipse cx="-14" cy="44" rx="7" ry="5" fill="#644630"/>
+              <circle cx="16" cy="22" r="4" fill="#272b22"/>
+              <ellipse cx="8" cy="0" rx="10" ry="12" fill="#9a6b48"/>
+              <ellipse cx="9" cy="2" rx="5" ry="7" fill="#d8a57a"/>
+              <path d="M30 95 27 112 45 112 48 99M79 97 82 112 99 112 96 91" fill="#8b5e3e"/>
+              <path d="M50 13Q64 0 78 14" fill="none" stroke="#477d4e" stroke-width="5" stroke-linecap="round"/>
+              <path d="M46 9Q40 -5 34 5M69 9Q81 -5 87 5" fill="none" stroke="#477d4e" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="30" cy="-6" r="10" fill="#f2a23a"/><path d="M30 -16q8-6 12 0q-8 4-12 0Z" fill="#4f9a52"/><ellipse cx="6" cy="34" rx="6" ry="3.5" fill="#f0907855"/></g></g>
+            <g fill="#fff8dc" opacity=".85"><circle cx="112" cy="75" r="3"/><circle cx="160" cy="52" r="2"/><circle cx="605" cy="170" r="3"/><circle cx="590" cy="209" r="2"/></g>
+            <g fill="#477d58"><path d="M102 328q-10-28-20-3q-17-16-14 10q-25-1-7 18h53q18-19-12-25Z"/><path d="M615 328q-10-28-20-3q-17-16-14 10q-25-1-7 18h53q18-19-12-25Z"/></g>
+          </svg>
+          <div class="hero-tag"><span class="tag-spark">✦</span> A world of your own</div>
+          <div class="hero-stamp">MADE FOR<br><strong>PLAY</strong></div>
+        </div>
+      </section>
+
+      <section class="featured-section" id="featured">
+        <div class="section-heading">
+          <div><div class="section-kicker">HAND-PICKED FOR YOU</div><h2>Featured worlds</h2></div>
+          <span class="section-note">A good place to start <span>↗</span></span>
+        </div>
+        <div class="featured-grid">
+          <article class="feature-card feature-capy">
+            <div class="feature-art">
+              <svg viewBox="0 0 600 240" aria-hidden="true">
+                <defs><linearGradient id="capyCoverSky" x2="0" y2="1"><stop stop-color="#cbe8d5"/><stop offset="1" stop-color="#f5e7c6"/></linearGradient></defs>
+                <rect width="600" height="240" fill="url(#capyCoverSky)"/>
+                <circle cx="482" cy="53" r="28" fill="#f5c86d"/>
+                <path d="M0 160 90 83 175 155 286 65 405 162 520 90 600 145V240H0Z" fill="#9ac6a2"/>
+                <path d="M0 188Q120 128 245 180T450 173T600 166V240H0Z" fill="#4f9169"/>
+                <path d="M0 215Q170 175 310 215T600 204V240H0Z" fill="#32734e"/>
+                <g transform="translate(255 98)"><ellipse cx="50" cy="80" rx="54" ry="34" fill="#a9764e"/><ellipse cx="22" cy="50" rx="34" ry="31" fill="#ba895e"/><ellipse cx="0" cy="64" rx="20" ry="14" fill="#d5a67b"/><circle cx="10" cy="43" r="3.5" fill="#22271f"/><ellipse cx="5" cy="25" rx="8" ry="10" fill="#9a6b48"/><path d="M36 104 34 119h17l1-15M78 103l3 16h16l-4-23" fill="#805638"/></g>
+                <g fill="#fff1be"><circle cx="172" cy="129" r="7"/><circle cx="425" cy="145" r="7"/><circle cx="445" cy="184" r="7"/></g>
+              </svg>
+              <span class="art-pill">PLAYER FAVORITE</span>
+            </div>
+            <div class="feature-copy"><div class="card-category">ADVENTURE · PLATFORMER</div><h3>Capy Hop</h3><p>Hop across a sunny valley, collect coins, and find the flag.</p><button class="button button-primary launch-button" data-game="Capy Hop">Play now <span>→</span></button></div>
+          </article>
+          <article class="feature-card feature-neon">
+            <div class="feature-art">
+              <svg viewBox="0 0 600 240" aria-hidden="true">
+                <defs><linearGradient id="neonSky" x2="0" y2="1"><stop stop-color="#20223f"/><stop offset="1" stop-color="#3c2f64"/></linearGradient></defs>
+                <rect width="600" height="240" fill="url(#neonSky)"/>
+                <circle cx="450" cy="70" r="42" fill="#f5a8d1" opacity=".13"/><circle cx="450" cy="70" r="26" fill="#f5a8d1" opacity=".8"/>
+                <path d="M0 150 70 120 130 153 200 98 275 150 355 113 430 155 500 105 600 150V240H0Z" fill="#4c4779"/>
+                <path d="M0 185 85 155 150 184 240 142 330 184 420 143 520 182 600 150V240H0Z" fill="#292d53"/>
+                <g stroke="#8a83d9" stroke-width="2" opacity=".8"><path d="M0 200H600M0 220H600M60 180 0 240M150 180 100 240M240 180 210 240M360 180 390 240M470 180 530 240M550 180 600 220"/></g>
+                <g transform="translate(285 95)" fill="#f3b3dc"><path d="M25 0 50 48 0 48Z"/><path d="M25 12 42 43H8Z" fill="#7ef0df"/></g>
+                <g fill="#fff" opacity=".8"><circle cx="70" cy="45" r="2"/><circle cx="210" cy="34" r="2"/><circle cx="335" cy="53" r="2"/><circle cx="545" cy="32" r="2"/></g>
+              </svg>
+              <span class="art-pill">QUICK & CHAOTIC</span>
+            </div>
+            <div class="feature-copy"><div class="card-category">ARCADE · ENDLESS</div><h3>Neon Dodge</h3><p>One tiny ship. Endless falling blocks. How long can you last?</p><button class="button button-primary launch-button" data-game="Neon Dodge">Play now <span>→</span></button></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="library-section" id="library">
+        <div class="section-heading library-heading">
+          <div><div class="section-kicker">THE COLLECTION</div><h2 id="library-title">Explore all games</h2></div>
+          <span class="game-count" id="game-count">05 GAMES</span>
+        </div>
+        <div class="game-grid" id="game-grid">
+          <article class="game-card" data-name="Capy Hop" data-category="Adventure" data-status="ready">
+            <button class="cover cover-capy" data-open-game="Capy Hop" aria-label="Play Capy Hop">
+              <svg viewBox="0 0 320 190" aria-hidden="true"><rect width="320" height="190" fill="#d9eddd"/><circle cx="254" cy="43" r="22" fill="#f5c86d"/><path d="M0 115 60 55 116 110 182 42 250 120 320 66V190H0Z" fill="#a2cba8"/><path d="M0 150Q90 110 160 150T320 143V190H0Z" fill="#4b9067"/><g transform="translate(119 68)"><ellipse cx="43" cy="58" rx="44" ry="28" fill="#a9764e"/><ellipse cx="20" cy="34" rx="27" ry="25" fill="#ba895e"/><ellipse cx="0" cy="46" rx="17" ry="12" fill="#d5a67b"/><circle cx="10" cy="28" r="3" fill="#242820"/><ellipse cx="6" cy="15" rx="7" ry="9" fill="#9a6b48"/><path d="M29 79l-2 12h14l1-12M64 77l3 14h13l-4-17" fill="#805638"/></g><g fill="#f2c75f"><circle cx="74" cy="105" r="6"/><circle cx="228" cy="127" r="6"/></g></svg><span class="cover-hover">PLAY ↗</span>
+            </button>
+            <div class="game-card-info"><div><h3>Capy Hop</h3><p>Adventure · Platformer</p></div><button class="heart-button" data-favorite="Capy Hop" aria-label="Favorite Capy Hop" aria-pressed="false">♡</button></div>
+            <button class="card-action" data-open-game="Capy Hop">Play game <span>→</span></button>
+          </article>
+          <article class="game-card" data-name="Neon Dodge" data-category="Arcade" data-status="ready">
+            <button class="cover cover-neon" data-open-game="Neon Dodge" aria-label="Play Neon Dodge">
+              <svg viewBox="0 0 320 190" aria-hidden="true"><rect width="320" height="190" fill="#242542"/><circle cx="240" cy="43" r="26" fill="#ef9fc9" opacity=".6"/><path d="M0 125 50 100 105 130 155 79 215 127 270 90 320 120V190H0Z" fill="#4d4779"/><path d="M0 160H320M0 178H320M60 140 20 190M130 140 115 190M200 140 215 190M270 140 300 190" stroke="#8c83d8" stroke-width="2"/><path d="M160 72l23 43h-46Z" fill="#7ef0df"/><rect x="60" y="40" width="16" height="16" rx="3" fill="#f5a6d3"/><rect x="240" y="105" width="22" height="22" rx="4" fill="#f5a6d3"/></svg><span class="cover-hover">PLAY ↗</span>
+            </button>
+            <div class="game-card-info"><div><h3>Neon Dodge</h3><p>Arcade · Survival</p></div><button class="heart-button" data-favorite="Neon Dodge" aria-label="Favorite Neon Dodge" aria-pressed="false">♡</button></div>
+            <button class="card-action" data-open-game="Neon Dodge">Play game <span>→</span></button>
+          </article>
+          <article class="game-card" data-name="Cube Canyon" data-category="3D" data-status="ready">
+            <button class="cover cover-cube" data-open-game="Cube Canyon" aria-label="Play Cube Canyon">
+              <svg viewBox="0 0 320 190" aria-hidden="true"><rect width="320" height="190" fill="#dce5f0"/><circle cx="253" cy="39" r="22" fill="#f5c978"/><path d="M0 112 75 54 136 116 220 45 320 122V190H0Z" fill="#a6b9d0"/><path d="M0 148 100 103 185 151 270 110 320 135V190H0Z" fill="#687f9f"/><g stroke="#f5f7fb" stroke-width="2" opacity=".8"><path d="M160 90 40 190M160 90 110 190M160 90 210 190M160 90 280 190M0 150H320M0 170H320"/></g><g transform="translate(132 75)"><path d="M0 18 28 2 56 18 28 34Z" fill="#83c6ad"/><path d="M0 18 28 34V67L0 51Z" fill="#438c78"/><path d="M28 34 56 18V51L28 67Z" fill="#286b5a"/></g></svg><span class="cover-hover">PLAY ↗</span>
+            </button>
+            <div class="game-card-info"><div><h3>Cube Canyon</h3><p>3D-style · Runner</p></div><button class="heart-button" data-favorite="Cube Canyon" aria-label="Favorite Cube Canyon" aria-pressed="false">♡</button></div>
+            <button class="card-action" data-open-game="Cube Canyon">Play game <span>→</span></button>
+          </article>
+          <article class="game-card" data-name="Pocket Garden" data-category="Puzzle" data-status="ready">
+            <button class="cover cover-garden" data-open-game="Pocket Garden" aria-label="Play Pocket Garden"><svg viewBox="0 0 320 190" aria-hidden="true"><rect width="320" height="190" fill="#f3e7d5"/><circle cx="245" cy="42" r="24" fill="#f5c978"/><path d="M0 135Q75 65 150 135T320 125V190H0Z" fill="#a7c7a0"/><path d="M0 160Q100 110 210 160T320 150V190H0Z" fill="#6b9b6d"/><g fill="#3f8a60"><rect x="70" y="50" width="52" height="40" rx="8"/><rect x="132" y="50" width="52" height="40" rx="8"/><rect x="194" y="50" width="52" height="40" rx="8"/></g><rect x="100" y="100" width="52" height="40" rx="8" fill="#fffaf0"/><text x="126" y="128" font-size="24" text-anchor="middle">🌷</text></svg><span class="cover-hover">PLAY ↗</span></button>
+            <div class="game-card-info"><div><h3>Pocket Garden</h3><p>Puzzle · Memory</p></div><button class="heart-button" data-favorite="Pocket Garden" aria-label="Favorite Pocket Garden" aria-pressed="false">♡</button></div>
+            <button class="card-action" data-open-game="Pocket Garden">Play game <span>→</span></button>
+          </article>
+          <article class="game-card" data-name="Snack Catch" data-category="Arcade" data-status="ready">
+            <button class="cover cover-snack" data-open-game="Snack Catch" aria-label="Play Snack Catch"><svg viewBox="0 0 320 190" aria-hidden="true"><rect width="320" height="190" fill="#d6eef5"/><circle cx="260" cy="40" r="22" fill="#f5c86d"/><rect y="150" width="320" height="40" fill="#6aa97f"/><text x="70" y="70" font-size="30">🍉</text><text x="215" y="95" font-size="30">🍊</text><text x="150" y="50" font-size="30">🪨</text><g transform="translate(120 105) scale(1.2)"><ellipse cx="40" cy="38" rx="34" ry="24" fill="#a9764e"/><ellipse cx="14" cy="22" rx="20" ry="18" fill="#ba895e"/><ellipse cx="-2" cy="30" rx="11" ry="8" fill="#d5a67b"/><circle cx="8" cy="18" r="2.5" fill="#222"/><rect x="20" y="30" width="42" height="14" rx="5" fill="#c98f4a"/></g></svg><span class="cover-hover">PLAY ↗</span></button>
+            <div class="game-card-info"><div><h3>Snack Catch</h3><p>Arcade · Catch</p></div><button class="heart-button" data-favorite="Snack Catch" aria-label="Favorite Snack Catch" aria-pressed="false">♡</button></div>
+            <button class="card-action" data-open-game="Snack Catch">Play game <span>→</span></button>
+          </article>
+        <article class="game-card" data-name="Capy Blaster" data-category="Arcade" data-status="ready"><button class="cover" data-open-game="Capy Blaster" aria-label="Play Capy Blaster"><svg viewBox="0 0 320 190" aria-hidden="true"><rect width="320" height="190" fill="#14163a"/><g fill="#fff"><circle cx="40" cy="30" r="1.5"/><circle cx="260" cy="50" r="1.5"/><circle cx="120" cy="20" r="1.5"/><circle cx="210" cy="25" r="1.5"/></g><text x="80" y="70" font-size="28">👾</text><text x="200" y="95" font-size="28">👾</text><path d="M160 105l22 48-22-10-22 10Z" fill="#4fd1c0"/><rect x="158" y="70" width="4" height="22" rx="2" fill="#9ffcf0"/></svg><span class="cover-hover">PLAY ↗</span></button><div class="game-card-info"><div><h3>Capy Blaster</h3><p>Arcade · Shooter</p></div><button class="heart-button" data-favorite="Capy Blaster" aria-label="Favorite Capy Blaster" aria-pressed="false">♡</button></div><button class="card-action" data-open-game="Capy Blaster">Play game <span>→</span></button></article>
+          <article class="game-card" data-name="Capy Seas" data-category="Adventure" data-status="ready"><button class="cover" data-open-game="Capy Seas" aria-label="Play Capy Seas"><svg viewBox="0 0 320 190" aria-hidden="true"><rect width="320" height="190" fill="#bfe3f5"/><circle cx="260" cy="38" r="22" fill="#f8d77a"/><rect y="105" width="320" height="85" fill="#2f7fb5"/><path d="M0 125q40-12 80 0t80 0 80 0 80 0" stroke="#9fd6ef" stroke-width="3" fill="none"/><ellipse cx="250" cy="112" rx="55" ry="14" fill="#e6d392"/><rect x="236" y="70" width="5" height="40" fill="#6b4a2e"/><path d="M226 74h30v14h-30Z" fill="#d94b4b"/><g transform="translate(90 70)"><path d="M0 40h90l-14 22H14Z" fill="#7a4e2b"/><rect x="42" y="0" width="5" height="40" fill="#5a3a20"/><path d="M47 4v30h30Z" fill="#fff"/></g></svg><span class="cover-hover">PLAY ↗</span></button><div class="game-card-info"><div><h3>Capy Seas</h3><p>Adventure · 3D Pirate RPG</p></div><button class="heart-button" data-favorite="Capy Seas" aria-label="Favorite Capy Seas" aria-pressed="false">♡</button></div><button class="card-action" data-open-game="Capy Seas">Play game <span>→</span></button></article>
+          <article class="game-card" data-name="Pond Snake" data-category="Arcade" data-status="ready"><button class="cover" data-open-game="Pond Snake" aria-label="Play Pond Snake"><svg viewBox="0 0 320 190" aria-hidden="true"><rect width="320" height="190" fill="#94c8aa"/><g fill="#2f7d52"><rect x="70" y="90" width="30" height="24" rx="8"/><rect x="100" y="90" width="30" height="24" rx="8"/><rect x="130" y="90" width="30" height="24" rx="8"/><rect x="160" y="90" width="30" height="24" rx="8"/><rect x="160" y="60" width="30" height="30" rx="9"/></g><text x="215" y="70" font-size="30">🍀</text></svg><span class="cover-hover">PLAY ↗</span></button><div class="game-card-info"><div><h3>Pond Snake</h3><p>Arcade · Classic</p></div><button class="heart-button" data-favorite="Pond Snake" aria-label="Favorite Pond Snake" aria-pressed="false">♡</button></div><button class="card-action" data-open-game="Pond Snake">Play game <span>→</span></button></article>
+          <article class="game-card" data-name="Capy Pong" data-category="Arcade" data-status="ready"><button class="cover" data-open-game="Capy Pong" aria-label="Play Capy Pong"><svg viewBox="0 0 320 190" aria-hidden="true"><rect width="320" height="190" fill="#16423f"/><path d="M160 0v190" stroke="#ffffff40" stroke-width="3" stroke-dasharray="10 12"/><rect x="26" y="60" width="12" height="70" rx="6" fill="#7ef0df"/><rect x="282" y="90" width="12" height="70" rx="6" fill="#ff85b2"/><circle cx="170" cy="100" r="9" fill="#ffe08a"/></svg><span class="cover-hover">PLAY ↗</span></button><div class="game-card-info"><div><h3>Capy Pong</h3><p>Arcade · Versus</p></div><button class="heart-button" data-favorite="Capy Pong" aria-label="Favorite Capy Pong" aria-pressed="false">♡</button></div><button class="card-action" data-open-game="Capy Pong">Play game <span>→</span></button></article>
+          <article class="game-card" data-name="Mud Bricks" data-category="Puzzle" data-status="ready"><button class="cover" data-open-game="Mud Bricks" aria-label="Play Mud Bricks"><svg viewBox="0 0 320 190" aria-hidden="true"><rect width="320" height="190" fill="#e8d3ac"/><g><rect x="30" y="30" width="48" height="16" rx="4" fill="#c97b5a"/><rect x="82" y="30" width="48" height="16" rx="4" fill="#d9a25a"/><rect x="134" y="30" width="48" height="16" rx="4" fill="#a8b86a"/><rect x="186" y="30" width="48" height="16" rx="4" fill="#5fa88a"/><rect x="238" y="30" width="48" height="16" rx="4" fill="#6a8cc9"/><rect x="56" y="52" width="48" height="16" rx="4" fill="#b86a9a"/><rect x="108" y="52" width="48" height="16" rx="4" fill="#c97b5a"/></g><circle cx="190" cy="130" r="8" fill="#c0392b"/><rect x="120" y="160" width="80" height="12" rx="6" fill="#3f8a60"/></svg><span class="cover-hover">PLAY ↗</span></button><div class="game-card-info"><div><h3>Mud Bricks</h3><p>Puzzle · Breakout</p></div><button class="heart-button" data-favorite="Mud Bricks" aria-label="Favorite Mud Bricks" aria-pressed="false">♡</button></div><button class="card-action" data-open-game="Mud Bricks">Play game <span>→</span></button></article>
+          </div>
+        <div id="empty-message" class="empty-message" hidden>No games found. Try another search or category.</div>
+      </section>
+      <footer class="footer"><span class="footer-brand">capybara.games</span><span>Small games. Big chill.</span><span>© <span id="year"></span> · Built for fun</span></footer>
+    </div>
+  </main>
+
+  <dialog class="game-dialog" id="game-dialog" aria-labelledby="dialog-title">
+    <div class="game-window-header">
+      <div class="window-game-name"><span class="window-dot"></span><span id="dialog-title">Game</span></div>
+      <div class="window-actions"><button id="pause-button" class="window-button">Pause</button><button id="fullscreen-button" class="window-button">⛶ Fullscreen</button><button id="close-dialog" class="window-button close-button" aria-label="Close game">✕</button></div>
+    </div>
+    <div class="canvas-wrap" id="canvas-wrap">
+      <canvas id="gl-canvas" width="800" height="450" hidden aria-label="3D game play area"></canvas>
+      <canvas id="game-canvas" width="800" height="450" aria-label="Game play area"></canvas>
+      <div id="seas-hud" class="seas-hud" hidden><div class="hud-top"><span id="hud-lv" class="hud-lv">Lv 1</span><div class="hud-bars"><div class="bar hp"><i id="hud-hp"></i><b id="hud-hpt"></b></div><div class="bar xp"><i id="hud-xp"></i></div></div><span id="hud-beli" class="hud-beli">฿0</span></div><div id="hud-quest" class="hud-quest"></div><canvas id="minimap" width="120" height="120"></canvas><div class="hud-skills"><span data-sk="z">Z</span><span data-sk="x">X</span><span data-sk="c">C</span></div><div id="hud-prompt" class="hud-prompt" hidden></div></div>
+      <div id="game-overlay" class="game-overlay">
+        <div class="overlay-kicker">CAPYBARA.GAMES ORIGINAL</div><h2 id="overlay-title">Ready to play?</h2><p id="overlay-description">Your next adventure starts here.</p><button id="start-game" class="button button-primary">Start game →</button>
+      </div>
+    </div>
+    <div class="touch-controls" id="touch-controls" aria-label="Touch controls"><button data-key="a" aria-label="Move left">◀</button><button data-key="d" aria-label="Move right">▶</button><button data-key="w" aria-label="Move up">▲</button><button data-key="s" aria-label="Move down">▼</button><button data-key=" " aria-label="Action">Action</button><button class="seas-only" data-key="e" hidden>E</button><button class="seas-only" data-key="z" hidden>Z</button><button class="seas-only" data-key="x" hidden>X</button><button class="seas-only" data-key="c" hidden>C</button></div>
+    <div class="game-controls"><span id="controls-text">Use your keyboard to play.</span><span id="score-display">SCORE 0</span></div>
+  </dialog>
+
+  <dialog class="settings-dialog" id="settings-dialog" aria-labelledby="settings-title">
+    <div class="settings-head"><div><div class="section-kicker">MAKE IT YOURS</div><h2 id="settings-title">Settings</h2></div><button id="settings-close" class="icon-button" aria-label="Close settings">✕</button></div>
+    <section class="setting-row"><div><h3>Appearance</h3><p>Choose the look that feels right.</p></div><div class="theme-switch" role="group" aria-label="Theme"><button data-theme-choice="light" class="theme-choice active"><span class="theme-preview preview-light"></span>Light</button><button data-theme-choice="dark" class="theme-choice"><span class="theme-preview preview-dark"></span>Dark</button><button data-theme-choice="system" class="theme-choice"><span class="theme-preview preview-system"></span>System</button></div></section>
+    <section class="setting-row"><div><h3>Sound effects</h3><p>UI clicks and game sounds.</p></div><button id="sound-toggle" class="toggle-switch" role="switch" aria-checked="true" aria-label="Sound effects"><span></span></button></section>
+    <section class="setting-row"><div><h3>Theme music</h3><p>A looping theme song for each game.</p></div><button id="music-toggle" class="toggle-switch" role="switch" aria-checked="true" aria-label="Theme music"><span></span></button></section>
+    <section class="setting-row"><div><h3>Visual effects</h3><p>Particles and little interface flourishes.</p></div><button id="vfx-toggle" class="toggle-switch is-on" role="switch" aria-checked="true" aria-label="Visual effects"><span></span></button></section>
+    <section class="setting-row"><div><h3>Reduce motion</h3><p>Less movement across the interface.</p></div><button id="motion-toggle" class="toggle-switch" role="switch" aria-checked="false" aria-label="Reduce motion"><span></span></button></section>
+    <div class="settings-bottom"><span>Preferences save on this device.</span><button id="settings-done" class="button button-primary">Done</button></div>
+  </dialog>
+  <dialog class="settings-dialog" id="auth-dialog" aria-labelledby="auth-title">
+    <div class="settings-head"><div><div class="section-kicker">CAPYBARA.GAMES ACCOUNT</div><h2 id="auth-title">Save your progress</h2></div></div>
+    <div class="theme-switch auth-tabs" role="group"><button type="button" class="theme-choice active" data-auth-tab="login">Log in</button><button type="button" class="theme-choice" data-auth-tab="register">Register</button></div>
+    <form id="auth-form" class="auth-form"><label>Username<input id="auth-user" autocomplete="username" required maxlength="20"></label><label>Password<input id="auth-pass" type="password" autocomplete="current-password" required></label><p id="auth-error" class="auth-error" role="alert"></p><button id="auth-submit" class="button button-primary" type="submit">Log in</button></form>
+    <div class="settings-bottom"><span>Accounts are stored in this browser only.</span><button type="button" id="auth-guest" class="window-button">Continue as guest</button></div>
+  </dialog>
+  <button id="buddy-button" class="buddy-button" aria-label="Chat with Capy Buddy"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="24" fill="#d9eddd"/><ellipse cx="24" cy="29" rx="15" ry="12" fill="#ba895e"/><ellipse cx="24" cy="33" rx="8" ry="5.5" fill="#d5a67b"/><ellipse cx="13" cy="16" rx="4" ry="5" fill="#9a6b48"/><ellipse cx="35" cy="16" rx="4" ry="5" fill="#9a6b48"/><circle cx="18" cy="26" r="2" fill="#222"/><circle cx="30" cy="26" r="2" fill="#222"/><circle cx="24" cy="12" r="6" fill="#f2a23a"/><path d="M24 7q5-4 8 0-5 3-8 0Z" fill="#4f9a52"/></svg></button>
+  <aside id="buddy-panel" class="buddy-panel" hidden aria-label="Capy Buddy assistant"><div class="buddy-head"><strong>Capy Buddy 🐹</strong><button id="buddy-close" class="icon-button" aria-label="Close chat">✕</button></div><div id="buddy-log" class="buddy-log" aria-live="polite"></div><form id="buddy-form" class="buddy-form"><input id="buddy-input" placeholder="Ask about a game…" autocomplete="off"><button class="button button-primary" type="submit">Send</button></form></aside>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="particle-layer" class="particle-layer" aria-hidden="true"></div>
+</body>
+</html>
