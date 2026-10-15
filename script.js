@@ -40,7 +40,7 @@ const GAME_INFO = {
   "Pocket Garden": { description: "Match the garden pairs in 3 stages. Fewer mistakes, cozier vibes.", controls: "Click or tap cards to flip them. P pauses." },
   "Snack Catch": { description: "Catch fruit, dodge rocks, and keep all 3 hearts. Speeds up every 8 fruit.", controls: "Move: A / D only" },
   "Capy Blaster": { description: "Blast the invading space bugs across 10 waves. Survive with 5 hearts.", controls: "Move: W A S D    Shoot: Space (hold)" },
-  "Capy Seas": { description: "Be a pirate legend! Take quests, grind levels, unlock Z/X/C skills, find Capy Fruits and sail 10 islands to defeat the Kraken Crab King.", controls: "WASD move · Space sword · Z X C skills · E quest board · Arrows/drag camera" },
+  "Capy Seas": { description: "Be a pirate legend! Take quests, grind levels, unlock Z/X/C skills, find Capy Fruits and sail 10 islands to defeat the Kraken Crab King.", controls: "WASD move · Space sword · Z X C skills · E talk / shop · H potion · Arrows/drag camera" },
   "Pond Snake": { description: "Glide through the pond and eat clovers. Don't hit the wall or yourself. 10 speed stages.", controls: "Steer: W A S D" },
   "Capy Pong": { description: "Beat the AI in 10 stages of faster and faster rallies. You have 3 lives.", controls: "Move paddle: W / S" },
   "Mud Bricks": { description: "Smash the mud bricks across 10 levels. Space launches the ball.", controls: "Move: A / D    Launch: Space" },
@@ -103,9 +103,11 @@ function noise(d, vol = .1, freq = 1200, delay = 0) {
 }
 let musicTimer = null;
 const MEL = [[0,2,4,7,4,2,4,7,9,7,4,2,0,2,4,2],[0,3,7,10,7,3,5,8,12,8,5,3,0,3,5,7],[0,0,7,7,9,9,7,5,5,4,4,2,2,0,0,-5],[12,9,7,9,12,9,7,4,9,7,4,2,7,4,2,0]];
-function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+function stopMusic() { clearInterval(musicTimer); musicTimer = null; if (ambient) { ambient(); ambient = null; } }
+function startAmbient() { try { const c = audio(), n = c.sampleRate * 2, b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0); let l = 0; for (let i = 0; i < n; i++) { l = l * .98 + (Math.random() * 2 - 1) * .1; d[i] = l * 4; }
+  const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), o = c.createOscillator(), og = c.createGain(); s.buffer = b; s.loop = true; f.type = "lowpass"; f.frequency.value = 500; g.gain.value = .05; o.frequency.value = .12; og.gain.value = .03; o.connect(og); og.connect(g.gain); s.connect(f); f.connect(g); g.connect(master); s.start(); o.start(); ambient = () => { try { s.stop(); o.stop(); } catch {} }; } catch {} }
 function startMusic(name) {
-  stopMusic(); if (!prefs.sound || !prefs.music) return;
+  stopMusic(); if (!prefs.sound || !prefs.music) return; if (name === "Capy Seas") startAmbient();
   let h = 0; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   const mel = name === "Capy Seas" ? [0,0,7,7,9,9,7,4,5,5,4,4,2,2,0,0] : MEL[h % 4], root = [196, 220, 246, 262, 174][h % 5], step = 60 / [108, 124, 96, 136][(h >> 3) % 4] / 2, wave = ["triangle", "square", "sine", "triangle"][(h >> 5) % 4]; let i = 0;
   musicTimer = setInterval(() => { try { audio(); const s = i++ % 16; tone(root * Math.pow(2, mel[s] / 12), step * .9, wave, wave === "square" ? .012 : .02); if (s % 4 === 0) tone(root / 2 * Math.pow(2, [0, 5, 7, 3][s / 4] / 12), step * 3.6, "sine", .03); } catch {} }, step * 1000);
@@ -122,7 +124,10 @@ function sound(type = "click") {
       win: () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, .22, "triangle", .06, 0, i * .1)),
       start: () => { tone(440, .1, "sine", .05, 660); tone(880, .12, "sine", .03, 0, .08); },
       stage: () => [659, 784, 988].forEach((f, i) => { tone(f, .2, "triangle", .06, 0, i * .08); tone(f * 2, .3, "sine", .02, 0, i * .08 + .05); }),
-      flip: () => { tone(700, .04, "sine", .04); noise(.03, .04, 4000); }
+      flip: () => { tone(650 + Math.random() * 250, .04, "sine", .04); noise(.03, .04, 4000); },
+      slash: () => { noise(.14, .12, 3500); tone(420, .12, "sawtooth", .03, 140); }, whoosh: () => { noise(.35, .12, 2000); tone(200, .35, "sine", .06, 900); }, dash: () => { noise(.18, .14, 5000); tone(300, .18, "triangle", .05, 1200); },
+      boom: () => { noise(.6, .22, 500); tone(90, .6, "sine", .16, 30); }, level: () => [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => { tone(f, .3, "triangle", .06, 0, i * .07); tone(f / 2, .3, "sine", .03, 0, i * .07); }),
+      quest: () => { tone(392, .12, "square", .03); tone(523, .12, "square", .03, 0, .1); tone(659, .25, "square", .03, 0, .2); }, step: () => noise(.04, .03, 900), splash: () => noise(.15, .06, 1800), cash: () => { tone(1568, .08, "square", .03); tone(2093, .2, "square", .03, 0, .07); }, tick: () => tone(900 + Math.random() * 300, .03, "square", .02), reveal: () => [784, 988, 1175].forEach((f, i) => tone(f, .25, "triangle", .06, 0, i * .09)), clang: () => { tone(1200, .15, "square", .04, 700); noise(.08, .08, 6000); }, gulp: () => { tone(300, .08, "sine", .07, 150); tone(260, .1, "sine", .07, 130, .1); }, talk: () => { for (let i = 0; i < 4; i++) tone(260 + Math.random() * 180, .05, "square", .02, 0, i * .06); }
     };
     (S[type] || S.click)();
   } catch {}
@@ -283,7 +288,7 @@ function openGame(name) {
   if (!GAME_INFO[name]) return;
   stopGame(); currentGame = name; dialog.showModal();
   $("#touch-controls").hidden = name === "Pocket Garden";
-  $("#seas-hud").hidden = name !== "Capy Seas"; $$(".seas-only").forEach(b => b.hidden = name !== "Capy Seas"); glc.style.touchAction = name === "Capy Seas" ? "none" : "pan-y";
+  $("#seas-hud").hidden = name !== "Capy Seas"; $("#mp-box").hidden = name !== "Capy Seas"; $$(".seas-only").forEach(b => b.hidden = name !== "Capy Seas"); glc.style.touchAction = name === "Capy Seas" ? "none" : "pan-y";
   const use3d = (name === "Cube Canyon" || name === "Capy Seas") && initGL(); glc.hidden = !use3d; canvas.hidden = use3d;
   $("#dialog-title").textContent = name;
   $("#controls-text").textContent = GAME_INFO[name].controls;
@@ -305,12 +310,13 @@ function resetGame() {
   keys.clear();
 }
 function stopGame() {
-  stopMusic(); if (currentGame === "Capy Seas" && X.sea) saveSeas();
+  stopMusic(); mpStop(); if (currentGame === "Capy Seas" && X.sea) saveSeas();
   isRunning = false; isPaused = false; cancelAnimationFrame(animationId); animationId = 0; keys.clear(); pauseButton.textContent = "Pause";
 }
 function startOrResume() {
   if (!currentGame) return;
   if (state.hit || state.won) resetGame();
+  if (currentGame === "Capy Seas" && !mpStart()) return;
   isPaused = false; isRunning = true; overlay.hidden = true; startMusic(currentGame); pauseButton.textContent = "Pause";
   previousTime = performance.now(); cancelAnimationFrame(animationId); animationId = requestAnimationFrame(gameLoop); sound("start");
 }
@@ -542,12 +548,15 @@ function initGL() {
   const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); return o; };
   const pr = gl.createProgram();
   gl.attachShader(pr, sh(gl.VERTEX_SHADER, "attribute vec3 p,n;uniform mat4 vp;uniform vec3 pos,sc;uniform float yw;varying vec3 vn;varying float fd;void main(){vec3 q=p*sc;float c=cos(yw),s=sin(yw);q=vec3(c*q.x+s*q.z,q.y,-s*q.x+c*q.z);gl_Position=vp*vec4(q+pos,1.);vn=vec3(c*n.x+s*n.z,n.y,-s*n.x+c*n.z);fd=gl_Position.w;}"));
-  gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, "precision mediump float;uniform vec3 col,sky;varying vec3 vn;varying float fd;void main(){float l=.45+.55*max(dot(normalize(vn),normalize(vec3(.5,1.,.7))),0.);gl_FragColor=vec4(mix(col*l,sky,clamp(fd/110.,0.,1.)),1.);}"));
+  gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, "precision mediump float;uniform vec3 col,sky;varying vec3 vn;varying float fd;void main(){float l=.52+.48*floor(max(dot(normalize(vn),normalize(vec3(.5,1.,.7))),0.)*3.+.5)/3.;gl_FragColor=vec4(mix(col*l,sky,clamp(fd/110.,0.,1.)),1.);}"));
   gl.linkProgram(pr); gl.useProgram(pr);
   const v = [], F = [[[0,0,1],[1,0,0],[0,1,0]],[[0,0,-1],[-1,0,0],[0,1,0]],[[1,0,0],[0,0,-1],[0,1,0]],[[-1,0,0],[0,0,1],[0,1,0]],[[0,1,0],[1,0,0],[0,0,-1]],[[0,-1,0],[1,0,0],[0,0,1]]];
   for (const [n, a, b] of F) for (const [s, t] of [[-1,-1],[1,-1],[1,1],[-1,-1],[1,1],[-1,1]]) v.push(...[0,1,2].map(i => n[i] * .5 + a[i] * s * .5 + b[i] * t * .5), ...n);
-  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v), gl.STATIC_DRAW);
-  for (const [k, o] of [["p", 0], ["n", 12]]) { const l = gl.getAttribLocation(pr, k); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, 3, gl.FLOAT, false, 24, o); }
+  MESH[0] = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, MESH[0]); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v), gl.STATIC_DRAW);
+  for (const [k, o] of [["p", 0], ["n", 12]]) { const l = gl.getAttribLocation(pr, k); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, 3, gl.FLOAT, false, 24, o); AL.push([l, o]); }
+  { const sv = [], LA = 10, LO = 14, pt = (a, b) => { const th = a / LA * Math.PI, ph = b / LO * 6.2832, x = Math.sin(th) * Math.cos(ph), y = Math.cos(th), z = Math.sin(th) * Math.sin(ph); return [x * .5, y * .5, z * .5, x, y, z]; };
+    for (let i = 0; i < LA; i++) for (let k = 0; k < LO; k++) { const A = pt(i, k), B = pt(i + 1, k), C = pt(i + 1, k + 1), D = pt(i, k + 1); sv.push(...A, ...C, ...B, ...A, ...D, ...C); }
+    SPHN = sv.length / 6; MESH[1] = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, MESH[1]); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sv), gl.STATIC_DRAW); gl.bindBuffer(gl.ARRAY_BUFFER, MESH[0]); }
   for (const k of ["vp", "pos", "sc", "col", "sky", "yw"]) U[k] = gl.getUniformLocation(pr, k);
   gl.enable(gl.DEPTH_TEST); gl.enable(gl.CULL_FACE);
   camLook([0, 5, 7], [0, 1.2, -14]); return true;
@@ -560,8 +569,10 @@ function camLook(e, c) {
   const VP = []; for (let i = 0; i < 4; i++) for (let r = 0; r < 4; r++) { let s = 0; for (let k = 0; k < 4; k++) s += P[k*4+r] * V[i*4+k]; VP[i*4+r] = s; }
   VPM = VP; gl.uniformMatrix4fv(U.vp, false, VP);
 }
-let GY = 0, VPM = null;
-function box(x, y, z, sx, sy, sz, c) { gl.uniform1f(U.yw, GY); gl.uniform3f(U.pos, x, y, z); gl.uniform3f(U.sc, sx, sy, sz); gl.uniform3f(U.col, ...c); gl.drawArrays(gl.TRIANGLES, 0, 36); }
+const MESH = [], AL = []; let OUT = false, CUR = 0, SPHN = 0, HS = 0, ambient = null, GY = 0, VPM = null;
+function bindMesh(i) { gl.bindBuffer(gl.ARRAY_BUFFER, MESH[i]); for (const [l, o] of AL) gl.vertexAttribPointer(l, 3, gl.FLOAT, false, 24, o); CUR = i; }
+function ball(x, y, z, sx, sy, sz, c) { if (CUR !== 1) { bindMesh(1); gl.disable(gl.CULL_FACE); } gl.uniform1f(U.yw, GY); gl.uniform3f(U.pos, x, y, z); gl.uniform3f(U.sc, sx, sy, sz); if (OUT) { gl.enable(gl.CULL_FACE); gl.cullFace(gl.FRONT); gl.uniform3f(U.sc, sx * 1.08 + .07, sy * 1.08 + .07, sz * 1.08 + .07); gl.uniform3f(U.col, .05, .04, .08); gl.drawArrays(gl.TRIANGLES, 0, SPHN); gl.cullFace(gl.BACK); gl.disable(gl.CULL_FACE); gl.uniform3f(U.sc, sx, sy, sz); } gl.uniform3f(U.col, ...c); gl.drawArrays(gl.TRIANGLES, 0, SPHN); }
+function box(x, y, z, sx, sy, sz, c) { if (CUR !== 0) { bindMesh(0); gl.enable(gl.CULL_FACE); } gl.uniform1f(U.yw, GY); if (OUT) { gl.cullFace(gl.FRONT); gl.uniform3f(U.pos, x, y, z); gl.uniform3f(U.sc, sx * 1.08 + .07, sy * 1.08 + .07, sz * 1.08 + .07); gl.uniform3f(U.col, .05, .04, .08); gl.drawArrays(gl.TRIANGLES, 0, 36); gl.cullFace(gl.BACK); } gl.uniform3f(U.pos, x, y, z); gl.uniform3f(U.sc, sx, sy, sz); gl.uniform3f(U.col, ...c); gl.drawArrays(gl.TRIANGLES, 0, 36); }
 function drawGL() {
   const sky = [.85, .91, .93]; camLook([0, 5, 7], [0, 1.2, -14]); GY = 0; gl.viewport(0, 0, glc.width, glc.height); gl.clearColor(...sky, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.uniform3f(U.sky, ...sky);
   const sc = (state.world * 5) % 8; box(0, -.5, -50, 11, 1, 130, [.62, .72, .62]);
@@ -622,121 +633,201 @@ let seasSave = null; try { seasSave = JSON.parse(localStorage.getItem("capySeas"
 const ISLS = Array.from({ length: 11 }, (_, i) => i ? { x: Math.cos(i * 1.15) * (34 + i * 11), z: Math.sin(i * 1.15) * (34 + i * 11), r: 16 } : { x: 0, z: 0, r: 16 });
 const PALMS = [[-8,-6],[8,-4],[-4,8],[6,7],[0,-10],[-10,4]], ROCKS = [[10,-8],[-11,-3],[3,11]];
 const BIOME = k => k <= 3 ? { g: [.35,.65,.35], t: [.25,.6,.3] } : k <= 6 ? { g: [.72,.5,.25], t: [.85,.42,.15] } : k <= 8 ? { g: [.86,.93,.96], t: [.6,.82,.92] } : { g: [.3,.22,.22], t: [.65,.15,.1] };
-const FRU = [{ n: "Flame", col: [1,.45,.1], m: 1.5 }, { n: "Ice", col: [.5,.85,1], m: 1.6 }, { n: "Quake", col: [.82,.7,.95], m: 1.8 }];
+const FRU = [{ n: "Flame", col: [1,.45,.1], m: 1.5, r: 1 }, { n: "Ice", col: [.5,.85,1], m: 1.6, r: 1 }, { n: "Quake", col: [.82,.7,.95], m: 1.8, r: 2 }, { n: "Spring", col: [.6,.9,.4], m: 1.2, r: 0 }, { n: "Spike", col: [.8,.8,.85], m: 1.25, r: 0 }, { n: "Light", col: [1,1,.6], m: 1.5, r: 1 }, { n: "Magma", col: [.9,.3,.1], m: 1.9, r: 2 }, { n: "Dark", col: [.4,.2,.55], m: 2.1, r: 2 }, { n: "Dragon", col: [.3,.9,.7], m: 2.7, r: 3 }];
+const WEAPONS = [{ n: "Rusty Cutlass", p: 0, m: 1, c: [.7,.7,.75], len: 2.8 }, { n: "Steel Saber", p: 300, m: 1.4, c: [.85,.9,1], len: 3 }, { n: "Captain's Cutlass", p: 900, m: 1.9, c: [.95,.8,.3], len: 3.2 }, { n: "Flame Blade", p: 2500, m: 2.6, c: [1,.45,.1], len: 3.4 }, { n: "Kraken Slayer", p: 6000, m: 3.5, c: [.55,.25,.85], len: 3.8 }];
+const RAR = ["Common", "Uncommon", "Rare", "Legendary"], RCOL = ["#cfd8dc", "#7ee081", "#6aa7ff", "#ffb347"];
 const SK = { z: { cd: 3.5, lv: 1 }, x: { cd: 5, lv: 5 }, c: { cd: 10, lv: 10 } }, CAM = { yaw: 0, pitch: .75, dist: 17, x: 0, z: 0, tx: 0, tz: 0 };
-const maxHp = l => 20 + l * 5, pdmg = l => Math.round(3 + l * 1.6), need = l => l * 14 + 10;
-function mkEn(k, x, z, boss) { const type = boss ? (k === 5 ? "skel" : "crab") : k <= 3 ? "crab" : k <= 6 ? "skel" : "brute", r = (type === "brute" ? 1.6 : 1.1) * (boss ? 2 : 1), hp = boss ? (k === 5 ? 160 : 420) : 6 + k * 8; return { x, z, hx: x, hz: z, k, boss, type, r, hp, max: hp, dead: false, rt: 0, cd: Math.random(), wind: 0, yaw: 0 }; }
+const maxHp = l => 20 + l * 5 + (X.sea?.st?.hp || 0) * 8, pdmg = l => Math.round((3 + l * 1.6 + (X.sea?.st?.dmg || 0) * 1.5) * WEAPONS[X.sea?.wp || 0].m), need = l => l * 14 + 10;
+function mkEn(k, x, z, boss) { const type = boss ? (k === 5 ? "skel" : "crab") : k <= 3 ? "crab" : k <= 6 ? "skel" : "brute", r = (type === "brute" ? 1.6 : 1.1) * (boss ? 2 : 1), hp = boss ? (k === 5 ? 160 : 420) : 6 + k * 8; return { x, z, hx: x, hz: z, k, boss, type, r, hp, max: hp, dead: false, rt: 0, cd: Math.random(), wind: 0, yaw: 0, die: 0, flash: 0 }; }
 function initSeas() {
   const sv = seasSave || {}, done = new Set(sv.done || []); if (done.size >= 10) done.clear(); const en = [];
-  for (let k = 1; k <= 10; k++) { const n = Math.min(8, k + 2); for (let i = 0; i < n; i++) { const a = i / n * 6.28 + k, d = 5 + (i % 3) * 3; en.push(mkEn(k, ISLS[k].x + Math.cos(a) * d, ISLS[k].z + Math.sin(a) * d, false)); } if (k === 5 || k === 10) en.push(mkEn(k, ISLS[k].x, ISLS[k].z, true)); }
-  const lvl = sv.lvl || 1; X.sea = { x: 0, z: 8, yaw: 0, lvl, xp: sv.xp || 0, beli: sv.beli || 0, fruit: sv.fruit || null, max: maxHp(lvl), hp: maxHp(lvl), swing: 0, hit: new Set(), en, done, quest: null, kills: 0, inv: 0, t: 0, mv: false, land: true, cds: { z: 0, x: 0, c: 0 }, dash: 0, fx: [], near: 0, eHeld: false, combat: 0 };
-  Object.assign(CAM, { yaw: 0, pitch: .75, dist: 17, x: 0, z: 8 });
+  for (let k = 1; k <= 10; k++) { const n = Math.min(10, k + 5); for (let i = 0; i < n; i++) { const a = i / n * 6.28 + k, d = 5 + (i % 3) * 3; en.push(mkEn(k, ISLS[k].x + Math.cos(a) * d, ISLS[k].z + Math.sin(a) * d, false)); } if (k === 5 || k === 10) en.push(mkEn(k, ISLS[k].x, ISLS[k].z, true)); }
+  const lvl = sv.lvl || 1; X.sea = { x: 0, z: 8, yaw: 0, lvl, xp: sv.xp || 0, beli: sv.beli || 0, fruit: sv.fruit ? FRU.find(f => f.n === sv.fruit.n) || null : null, max: maxHp(lvl), hp: maxHp(lvl), swing: 0, hit: new Set(), en, done, quest: null, kills: 0, inv: 0, t: 0, mv: false, land: true, cds: { z: 0, x: 0, c: 0 }, dash: 0, fx: [], near: 0, eHeld: false, combat: 0, parts: [], wp: sv.wp || 0, owned: sv.owned || [0], fruits: sv.fruits || (sv.fruit ? [sv.fruit.n] : []), pots: sv.pots || 0, shop: "", ns: "", rolling: false, pts: sv.pts || 0, st: sv.st || { dmg: 0, hp: 0, spd: 0 }, kh: {}, stepT: 0 };
+  Object.assign(CAM, { yaw: 0, pitch: .75, dist: 17, x: 0, z: 8 }); X.sea.max = X.sea.hp = maxHp(lvl);
 }
-function saveSeas() { const s = X.sea; if (!s) return; seasSave = { lvl: s.lvl, xp: s.xp, beli: s.beli, fruit: s.fruit, done: [...s.done] }; try { localStorage.setItem("capySeas", JSON.stringify(seasSave)); } catch {} saveProgress(); }
+function saveSeas() { const s = X.sea; if (!s) return; seasSave = { lvl: s.lvl, xp: s.xp, beli: s.beli, fruit: s.fruit, done: [...s.done], pts: s.pts, st: s.st, wp: s.wp, owned: s.owned, fruits: s.fruits, pots: s.pots }; try { localStorage.setItem("capySeas", JSON.stringify(seasSave)); } catch {} saveProgress(); }
+const MP = { ws: null, on: false, id: null, others: new Map(), tags: new Map(), t: 0 }, COATS = [[.2,.4,.8],[.2,.6,.3],[.6,.2,.7],[.9,.5,.1],[.1,.6,.6],[.8,.3,.5]];
+function mpStart() {
+  if (!$("#mp-online").checked) { mpStop(); return true; }
+  if (!user) { toast("Sign in to play online."); authDialog.showModal(); return false; }
+  if (MP.ws && MP.ws.readyState <= 1) return true;
+  const url = $("#mp-url").value.trim(); try { localStorage.setItem("capyMpUrl", url); } catch {}
+  let ws; try { ws = new WebSocket(url); } catch { toast("Invalid server address — playing solo."); return true; }
+  MP.ws = ws;
+  ws.onopen = () => ws.send(JSON.stringify({ t: "join", name: user, room: +$("#mp-room").value }));
+  ws.onmessage = ev => { let m; try { m = JSON.parse(ev.data); } catch { return; }
+    if (m.t === "welcome") { MP.on = true; MP.id = m.id; toast(`Joined Server ${m.room} 🌐`); }
+    else if (m.t === "err") { toast(m.m); mpStop(); }
+    else if (m.t === "state" && MP.on) { const seen = new Set();
+      for (const p of m.p) { if (p.id === MP.id) continue; seen.add(p.id); let r = MP.others.get(p.id); if (!r) { r = { x: p.x, z: p.z, yaw: p.yaw, name: p.name, coat: COATS[p.id % COATS.length] }; MP.others.set(p.id, r); } Object.assign(r, { tx: p.x, tz: p.z, tyaw: p.yaw, mv: p.mv, sw: p.sw, lvl: p.lvl, fruit: FRU[p.fr] || null }); }
+      for (const id of [...MP.others.keys()]) if (!seen.has(id)) { MP.others.delete(id); MP.tags.get(id)?.remove(); MP.tags.delete(id); } } };
+  ws.onerror = () => toast("Couldn't reach the server — is server.js running? Playing solo.");
+  ws.onclose = () => { MP.on = false; };
+  return true;
+}
+function mpStop() { try { MP.ws?.close(); } catch {} MP.ws = null; MP.on = false; MP.others.clear(); MP.tags.forEach(t => t.remove()); MP.tags.clear(); }
+function mpDraw(t) {
+  for (const [id, r] of MP.others) {
+    r.x += (r.tx - r.x) * .25; r.z += (r.tz - r.z) * .25; let d = r.tyaw - r.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); r.yaw += d * .25;
+    r.land = ISLS.some(i => Math.hypot(r.x - i.x, r.z - i.z) < i.r); r.swing = r.sw ? .35 * (1 - (t * 3) % 1) : 0; drawCapyModel(r, t); GY = 0; OUT = false;
+    let tag = MP.tags.get(id); if (!tag) { tag = document.createElement("span"); tag.className = "nametag"; $("#canvas-wrap").appendChild(tag); MP.tags.set(id, tag); }
+    const [sx, sy] = proj(r.x, 4.4, r.z); tag.style.left = (sx + 1) * 50 + "%"; tag.style.top = (1 - sy) * 50 + "%"; tag.textContent = `${r.name} · Lv ${r.lvl || 1}`;
+  }
+}
 function proj(x, y, z) { const c = VPM, w = c[3] * x + c[7] * y + c[11] * z + c[15]; return [(c[0] * x + c[4] * y + c[8] * z + c[12]) / w, (c[1] * x + c[5] * y + c[9] * z + c[13]) / w]; }
-function popText(x, y, z, txt, col = "#fff") { if (!VPM) return; const [sx, sy] = proj(x, y, z), p = document.createElement("span"); p.className = "pop"; p.textContent = txt; p.style.color = col; p.style.left = (sx + 1) * 50 + "%"; p.style.top = (1 - sy) * 50 + "%"; $("#canvas-wrap").appendChild(p); setTimeout(() => p.remove(), 900); }
+function popText(x, y, z, txt, col = "#fff", big = false) { if (!VPM) return; const [sx, sy] = proj(x, y, z), p = document.createElement("span"); p.className = "pop" + (big ? " crit" : ""); p.textContent = txt; p.style.color = col; p.style.left = (sx + 1) * 50 + "%"; p.style.top = (1 - sy) * 50 + "%"; $("#canvas-wrap").appendChild(p); setTimeout(() => p.remove(), 900); }
+function burst3(x, y, z, n, col, sp = 6, up = 4) { const s = X.sea; if (!s || !prefs.vfx || prefs.reduceMotion) return; for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = sp * (.4 + Math.random()); s.parts.push({ x, y, z, vx: Math.cos(a) * v, vy: up * (.4 + Math.random()), vz: Math.sin(a) * v, life: .5 + Math.random() * .4, col, sz: .18 + Math.random() * .22 }); } if (s.parts.length > 220) s.parts.splice(0, s.parts.length - 220); }
+function hurtFlash() { const h = $("#hurt-flash"); h.classList.remove("on"); void h.offsetWidth; h.classList.add("on"); }
 function ring(x, z, r, col) { X.sea.fx.push({ x, z, r, col, t: 0 }); }
 function hurtEn(e, amt, kx, kz) {
-  const s = X.sea; if (e.dead) return; e.hp -= amt; e.x += kx; e.z += kz; e.wind = 0; popText(e.x, 3, e.z, Math.round(amt), s.fruit ? "#ffb347" : "#fff"); sound("flip");
-  if (e.hp > 0) return; e.dead = true; e.rt = e.boss ? 60 : 10; s.kills++; score = s.kills; sound("coin");
+  const s = X.sea; if (e.dead) return; const crit = Math.random() < .15; if (crit) amt *= 2; e.hp -= amt; e.x += kx; e.z += kz; e.wind = 0; popText(e.x, 3, e.z, (crit ? "💥" : "") + Math.round(amt), crit ? "#ffd54a" : s.fruit ? "#ffb347" : "#fff", crit); sound(crit ? "clang" : "flip"); e.flash = .12; HS = .045; burst3(e.x, 2, e.z, 8, [1, .9, .5], 6, 4);
+  if (e.hp > 0) return; e.dead = true; e.die = .5; burst3(e.x, 1.5, e.z, 26, s.fruit ? s.fruit.col : [1, .55, .25], 9, 8); e.rt = e.boss ? 60 : 10; s.kills++; score = s.kills; sound("coin");
   s.xp += 3 + e.k * 2 + (e.boss ? 40 : 0); const b = 8 + e.k * 4 + (e.boss ? 200 : 0); s.beli += b; popText(e.x, 4, e.z, "+฿" + b, "#ffe08a");
   const q = s.quest; if (q && q.k === e.k && (q.boss ? e.boss : true)) { q.have++; if (q.have >= q.need) finishQuest(q); }
-  while (s.xp >= need(s.lvl)) { s.xp -= need(s.lvl); s.lvl++; s.max = maxHp(s.lvl); s.hp = s.max; sound("stage"); toast(`LEVEL UP! Lv ${s.lvl}${s.lvl === 5 ? " — Skill X unlocked!" : s.lvl === 10 ? " — Skill C unlocked!" : ""}`); ring(s.x, s.z, 8, [1, .9, .3]); saveSeas(); }
+  while (s.xp >= need(s.lvl)) { s.xp -= need(s.lvl); s.lvl++; s.pts += 3; s.max = maxHp(s.lvl); s.hp = s.max; sound("level"); toast(`LEVEL UP! Lv ${s.lvl}${s.lvl === 5 ? " — Skill X unlocked!" : s.lvl === 10 ? " — Skill C unlocked!" : ""}`); ring(s.x, s.z, 8, [1, .9, .3]); burst3(s.x, 1, s.z, 40, [1, .9, .3], 3, 11); saveSeas(); }
 }
 function finishQuest(q) {
   const s = X.sea, k = q.k; s.quest = null; s.done.add(k); s.xp += 25 * k + 20; s.beli += 150 * k; sound("win"); toast(`Quest complete! +${25 * k + 20} XP, +฿${150 * k}`);
-  if (k % 3 === 0) { s.fruit = FRU[k / 3 - 1]; setTimeout(() => toast(`You found the ${s.fruit.n} Capy Fruit! Skills powered up ×${s.fruit.m}`), 1800); }
-  while (s.xp >= need(s.lvl)) { s.xp -= need(s.lvl); s.lvl++; s.max = maxHp(s.lvl); s.hp = s.max; }
+  if (k % 3 === 0) { s.fruit = FRU[k / 3 - 1]; if (!s.fruits.includes(s.fruit.n)) s.fruits.push(s.fruit.n); setTimeout(() => toast(`You found the ${s.fruit.n} Capy Fruit! Skills powered up ×${s.fruit.m}`), 1800); }
+  while (s.xp >= need(s.lvl)) { s.xp -= need(s.lvl); s.lvl++; s.pts += 3; s.max = maxHp(s.lvl); s.hp = s.max; }
   saveSeas(); stageCheck(1 + s.done.size);
 }
 function aoe(r, mult, push = 3) { const s = X.sea; for (const e of s.en) { const dx = e.x - s.x, dz = e.z - s.z, d = Math.hypot(dx, dz) || 1; if (!e.dead && d < r + e.r) hurtEn(e, Math.round(pdmg(s.lvl) * mult), dx / d * push, dz / d * push); } }
 function useSkill(k) {
   const s = X.sea; if (s.lvl < SK[k].lv || s.cds[k] > 0) return; s.cds[k] = SK[k].cd; const col = s.fruit ? s.fruit.col : [.92, .96, 1], m = s.fruit ? s.fruit.m : 1;
-  if (k === "z") { ring(s.x, s.z, 7, col); aoe(7, 2 * m); sound("jump"); }
-  if (k === "x") { s.dash = .22; s.inv = .4; ring(s.x, s.z, 4, col); sound("start"); }
-  if (k === "c") { ring(s.x, s.z, 11, col); setTimeout(() => ring(s.x, s.z, 6, col), 120); aoe(11, 3.4 * m, 5); sound("hit"); CAM.shake = .6; }
+  if (k === "z") { ring(s.x, s.z, 7, col); burst3(s.x, 1, s.z, 30, col, 8, 5); aoe(7, 2 * m); sound("whoosh"); }
+  if (k === "x") { s.dash = .22; s.inv = .4; ring(s.x, s.z, 4, col); sound("dash"); }
+  if (k === "c") { ring(s.x, s.z, 11, col); setTimeout(() => ring(s.x, s.z, 6, col), 120); aoe(11, 3.4 * m, 5); sound("boom"); CAM.shake = .6; burst3(s.x, 1, s.z, 50, col, 12, 9); }
 }
+function say(n, t) { const e = $("#hud-say"); e.hidden = false; e.innerHTML = `<b>${n}</b> ${t}`; clearTimeout(say.t); say.t = setTimeout(() => e.hidden = true, 3800); sound("talk"); }
 function seasInteract() {
-  const s = X.sea, k = s.near; if (!k) return;
-  if (s.done.has(k)) return toast("You already finished this island's quest.");
-  if (s.quest && s.quest.k === k) return toast("Quest in progress!");
-  const boss = k === 5 || k === 10; s.quest = { k, boss, need: boss ? 1 : 3 + k, have: 0 }; sound("stage"); toast(boss ? `Quest accepted: Defeat the boss of Island ${k}!` : `Quest accepted: Defeat ${3 + k} pirates on Island ${k}`);
+  const s = X.sea; if (s.ns) { s.shop = s.ns; renderShop(); $("#shop").hidden = false; sound("click"); return; }
+  const k = s.near; if (!k) return;
+  if (s.done.has(k)) return say("Captain Pip", `You already cleared Island ${k}. On to Island ${Math.min(10, k + 1)}!`);
+  if (k > 1 && !s.done.has(k - 1)) return say("Captain Pip", `Island ${k} is too dangerous for now. Clear Island ${k - 1} first!`);
+  if (s.quest && s.quest.k === k) return say("Captain Pip", `Keep fighting! ${s.quest.have}/${s.quest.need} done.`);
+  const boss = k === 5 || k === 10; s.quest = { k, boss, need: boss ? 1 : 3 + k, have: 0 }; sound("quest");
+  say("Captain Pip", boss ? `The boss of Island ${k} terrorizes us! Defeat it!` : `Ahoy! Defeat ${3 + k} pirates on this island and I'll reward you!`);
 }
+function closeShop() { X.sea.shop = ""; $("#shop").hidden = true; }
+function renderShop() {
+  const s = X.sea, b = $("#shop-body"); $("#shop-beli").textContent = "฿" + s.beli;
+  if (s.shop === "smith") { $("#shop-title").textContent = "⚔️ Blacksmith Barnaby"; b.innerHTML = WEAPONS.map((w, i) => `<div class="shop-row"><i style="background:rgb(${w.c.map(v => v * 255 | 0)})"></i><span><b>${w.n}</b><small>Damage ×${w.m}</small></span>${s.owned.includes(i) ? (s.wp === i ? "<em>Equipped</em>" : `<button data-act="eq:${i}">Equip</button>`) : `<button data-act="buy:${i}" ${s.beli < w.p ? "disabled" : ""}>฿${w.p}</button>`}</div>`).join("") + `<div class="shop-row"><i style="background:#e05a5a"></i><span><b>Health Potion</b><small>Heals 50% · press H · you own ${s.pots}</small></span><button data-act="pot" ${s.beli < 60 ? "disabled" : ""}>฿60</button></div>`; }
+  else { $("#shop-title").textContent = "🍎 Fruit Dealer Mira"; b.innerHTML = `<div id="roll-out" class="roll-out" style="color:${s.rc || "#fff"}">${s.rt || "Roll for a Capy Fruit!"}</div><button class="roll-btn" data-act="roll" ${s.beli < 500 || s.rolling ? "disabled" : ""}>Roll — ฿500</button><p class="shop-note">Common 55% · Uncommon 28% · Rare 13% · Legendary 4%. Duplicates refund ฿250.</p>` + s.fruits.map(n => { const f = FRU.find(q => q.n === n); return `<div class="shop-row"><i style="background:rgb(${f.col.map(v => v * 255 | 0)})"></i><span><b style="color:${RCOL[f.r]}">${f.n}</b><small>${RAR[f.r]} · skills ×${f.m}</small></span>${s.fruit && s.fruit.n === n ? "<em>Equipped</em>" : `<button data-act="fruit:${n}">Equip</button>`}</div>`; }).join(""); }
+}
+function rollFruit() {
+  const s = X.sea; if (s.beli < 500 || s.rolling) return; s.beli -= 500; s.rolling = true; renderShop();
+  const r = Math.random() * 100, rar = r < 55 ? 0 : r < 83 ? 1 : r < 96 ? 2 : 3, pool = FRU.filter(f => f.r === rar), f = pool[Math.floor(Math.random() * pool.length)], out = $("#roll-out"); let n = 0;
+  const iv = setInterval(() => { const x = FRU[Math.floor(Math.random() * FRU.length)]; out.textContent = x.n; out.style.color = RCOL[x.r]; sound("tick");
+    if (++n > 14) { clearInterval(iv); s.rolling = false; const dup = s.fruits.includes(f.n); s.rt = `${RAR[f.r]}: ${f.n}!` + (dup ? " (duplicate +฿250)" : " NEW!"); s.rc = RCOL[f.r]; sound(f.r >= 2 ? "level" : "reveal"); if (dup) s.beli += 250; else { s.fruits.push(f.n); s.fruit = f; } saveSeas(); if (s.shop) renderShop(); } }, 90);
+}
+$("#shop-close").addEventListener("click", () => closeShop());
+$("#shop-body").addEventListener("click", e => {
+  const a = e.target.closest("button")?.dataset.act; if (!a) return; const s = X.sea, [c, v] = a.split(":");
+  if (c === "buy") { const w = WEAPONS[v]; if (s.beli >= w.p && !s.owned.includes(+v)) { s.beli -= w.p; s.owned.push(+v); s.wp = +v; sound("cash"); } }
+  else if (c === "eq") { s.wp = +v; sound("clang"); } else if (c === "pot") { if (s.beli >= 60) { s.beli -= 60; s.pots++; sound("cash"); } }
+  else if (c === "roll") { rollFruit(); return; } else if (c === "fruit") { s.fruit = FRU.find(f => f.n === v); sound("clang"); }
+  saveSeas(); renderShop();
+});
 function updateSeas(dt) {
-  const s = X.sea; s.t += dt; s.inv -= dt; s.swing -= dt; s.combat -= dt; for (const k in s.cds) s.cds[k] = Math.max(0, s.cds[k] - dt);
+  if (HS > 0) { HS -= dt; seasHud(); return; }
+  const s = X.sea; if (s.shop) { if (keys.has("e") && !s.eHeld) { closeShop(); s.eHeld = true; } if (!keys.has("e")) s.eHeld = false; seasHud(); return; }
+  s.t += dt; s.inv -= dt; s.swing -= dt; s.combat -= dt; if (s.swing > 0) burst3(s.x - Math.sin(s.yaw) * 2.6, 1.7, s.z - Math.cos(s.yaw) * 2.6, 1, [1, 1, .9], 2, 1); for (const k in s.cds) s.cds[k] = Math.max(0, s.cds[k] - dt);
   CAM.yaw += ((keys.has("ArrowLeft") ? 1 : 0) - (keys.has("ArrowRight") ? 1 : 0)) * 1.9 * dt; CAM.pitch = clamp(CAM.pitch + ((keys.has("ArrowDown") ? 1 : 0) - (keys.has("ArrowUp") ? 1 : 0)) * 1.1 * dt, .25, 1.3);
   CAM.shake = Math.max(0, (CAM.shake || 0) - dt * 2);
   const fw = (keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0), rt = (keys.has("d") ? 1 : 0) - (keys.has("a") ? 1 : 0), sy = Math.sin(CAM.yaw), cy = Math.cos(CAM.yaw);
   let mx = -sy * fw + cy * rt, mz = -cy * fw - sy * rt; const ml = Math.hypot(mx, mz); s.mv = ml > 0;
   s.land = ISLS.some(i => Math.hypot(s.x - i.x, s.z - i.z) < i.r);
   if (s.mv) { mx /= ml; mz /= ml; s.yaw = Math.atan2(-mx, -mz); }
-  if (s.dash > 0) { s.dash -= dt; const fx = -Math.sin(s.yaw), fz = -Math.cos(s.yaw); s.x += fx * 42 * dt; s.z += fz * 42 * dt; for (const e of s.en) if (!e.dead && Math.hypot(e.x - s.x, e.z - s.z) < e.r + 2.2 && !s.hit.has(e)) { s.hit.add(e); hurtEn(e, Math.round(pdmg(s.lvl) * 1.5 * (s.fruit ? s.fruit.m : 1)), fx * 3, fz * 3); } }
-  else if (s.mv) { const sp = (s.land ? 10 : 6.5) * (s.swing > 0 ? .6 : 1); s.x = clamp(s.x + mx * sp * dt, -190, 190); s.z = clamp(s.z + mz * sp * dt, -190, 190); }
+  if (s.dash > 0) { s.dash -= dt; burst3(s.x, 1, s.z, 2, s.fruit ? s.fruit.col : [.9, .95, 1], 2, 1); const fx = -Math.sin(s.yaw), fz = -Math.cos(s.yaw); s.x += fx * 42 * dt; s.z += fz * 42 * dt; for (const e of s.en) if (!e.dead && Math.hypot(e.x - s.x, e.z - s.z) < e.r + 2.2 && !s.hit.has(e)) { s.hit.add(e); hurtEn(e, Math.round(pdmg(s.lvl) * 1.5 * (s.fruit ? s.fruit.m : 1)), fx * 3, fz * 3); } }
+  else if (s.mv) { const sp = (s.land ? 10 : 6.5) * (s.swing > 0 ? .6 : 1) * (1 + s.st.spd * .03); s.x = clamp(s.x + mx * sp * dt, -190, 190); s.z = clamp(s.z + mz * sp * dt, -190, 190); }
   if (keys.has("z")) useSkill("z"); if (keys.has("x")) { if (s.cds.x <= 0) s.hit = new Set(); useSkill("x"); } if (keys.has("c")) useSkill("c");
+  if (keys.has("h")) { if (!s.hh && s.pots > 0 && s.hp < s.max) { s.hh = 1; s.pots--; s.hp = Math.min(s.max, s.hp + s.max * .5); sound("gulp"); popText(s.x, 3.5, s.z, "+HP", "#7ee081"); burst3(s.x, 1.5, s.z, 20, [.4, 1, .5], 3, 7); saveSeas(); } } else s.hh = 0;
+  for (const [k, n] of [["1", "dmg"], ["2", "hp"], ["3", "spd"]]) { if (keys.has(k)) { if (!s.kh[k] && s.pts > 0) { s.kh[k] = 1; s.pts--; s.st[n]++; s.max = maxHp(s.lvl); s.hp = Math.min(s.max, s.hp + 8); sound("coin"); saveSeas(); } } else s.kh[k] = 0; }
   if (keys.has("e") && !s.eHeld) { s.eHeld = true; seasInteract(); } if (!keys.has("e")) s.eHeld = false;
   if (keys.has(" ") && s.swing <= 0) {
-    s.swing = .35; s.hit = new Set(); sound("jump"); let n = null, nd = 9; for (const e of s.en) { const d = Math.hypot(e.x - s.x, e.z - s.z); if (!e.dead && d < nd) { nd = d; n = e; } } if (n) s.yaw = Math.atan2(-(n.x - s.x), -(n.z - s.z));
+    s.swing = .35; s.hit = new Set(); sound("slash"); let n = null, nd = 9; for (const e of s.en) { const d = Math.hypot(e.x - s.x, e.z - s.z); if (!e.dead && d < nd) { nd = d; n = e; } } if (n) s.yaw = Math.atan2(-(n.x - s.x), -(n.z - s.z));
     const fx = -Math.sin(s.yaw), fz = -Math.cos(s.yaw); for (const e of s.en) { const ex = e.x - s.x, ez = e.z - s.z, d = Math.hypot(ex, ez) || 1; if (!e.dead && d < 5 + e.r && ex * fx + ez * fz > 0) hurtEn(e, Math.round(pdmg(s.lvl) * (s.fruit ? 1.2 : 1)), ex / d * 1.6, ez / d * 1.6); }
   }
   for (const e of s.en) {
-    if (e.dead) { e.rt -= dt; if (e.rt <= 0) { e.dead = false; e.hp = e.max; e.x = e.hx; e.z = e.hz; } continue; }
+    if (e.dead) { e.die -= dt; e.rt -= dt; if (e.rt <= 0) { e.dead = false; e.hp = e.max; e.x = e.hx; e.z = e.hz; } continue; }
+    e.flash -= dt;
     const d = Math.hypot(s.x - e.x, s.z - e.z), chase = d < 22, tx = chase ? s.x : e.hx, tz = chase ? s.z : e.hz, td = Math.hypot(tx - e.x, tz - e.z) || 1, reach = e.r + 1.6; e.yaw = Math.atan2(-(s.x - e.x), -(s.z - e.z)); e.cd -= dt;
-    if (e.wind > 0) { e.wind -= dt; if (e.wind <= 0 && d < reach + .8 && s.inv <= 0) { const dm = e.boss ? 12 + e.k : Math.round(2 + e.k * 1.5); s.hp -= dm; s.inv = .7; s.combat = 4; popText(s.x, 3.5, s.z, "-" + dm, "#ff6b6b"); sound("hit"); if (s.hp <= 0) { s.beli = Math.floor(s.beli * .9); s.hp = s.max; s.x = 0; s.z = 8; s.inv = 2; toast("You were defeated! You wake up at home (-10% ฿)."); } } }
+    if (e.wind > 0) { e.wind -= dt; if (e.wind <= 0 && d < reach + .8 && s.inv <= 0) { const dm = e.boss ? 12 + e.k : Math.round(2 + e.k * 1.5); s.hp -= dm; s.inv = .7; s.combat = 4; popText(s.x, 3.5, s.z, "-" + dm, "#ff6b6b"); sound("hit"); hurtFlash(); if (s.hp <= 0) { s.beli = Math.floor(s.beli * .9); s.hp = s.max; s.x = 0; s.z = 8; s.inv = 2; toast("You were defeated! You wake up at home (-10% ฿)."); } } }
     else if (chase && d > reach - .3) { const v = (e.boss ? 3.4 : 2.6 + e.k * .3) * dt; e.x += (tx - e.x) / td * v; e.z += (tz - e.z) / td * v; }
     else if (!chase && td > 1) { e.x += (tx - e.x) / td * 1.5 * dt; e.z += (tz - e.z) / td * 1.5 * dt; }
     if (chase && d < reach && e.cd <= 0 && e.wind <= 0) { e.wind = e.boss ? .7 : .5; e.cd = e.boss ? 1.6 : 1.3; }
   }
   if (s.land && s.combat <= 0 && s.hp < s.max) s.hp = Math.min(s.max, s.hp + dt * (Math.hypot(s.x, s.z) < 16 ? 10 : 2));
-  s.near = 0; for (let k = 1; k <= 10; k++) if (Math.hypot(s.x - ISLS[k].x, s.z - (ISLS[k].z + 12)) < 5) s.near = k;
+  s.near = 0; for (let k = 1; k <= 10; k++) if (Math.hypot(s.x - ISLS[k].x, s.z - (ISLS[k].z + 12)) < 5) s.near = k; s.ns = Math.hypot(s.x - 8, s.z - 6) < 5 ? "smith" : Math.hypot(s.x + 3, s.z - 11) < 5 ? "dealer" : "";
   CAM.tx = s.x; CAM.tz = s.z; const f = Math.min(1, dt * 7); CAM.x += (CAM.tx - CAM.x) * f; CAM.z += (CAM.tz - CAM.z) * f;
+  if (s.mv) { s.stepT = (s.stepT || 0) - dt; if (s.stepT <= 0) { s.stepT = .3; if (s.land) sound("step"); else { sound("splash"); burst3(s.x, .2, s.z, 4, [.9, .97, 1], 2, 3); } } }
+  if (s.fruit && Math.random() < .35) burst3(s.x, 1.8, s.z, 1, s.fruit.col, 1.5, 3);
+  for (const p of s.parts) { p.life -= dt; p.vy -= 14 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; } s.parts = s.parts.filter(p => p.life > 0 && p.y > -.5);
+  if (MP.on && MP.ws.readyState === 1 && performance.now() - MP.t > 100) { MP.t = performance.now(); MP.ws.send(JSON.stringify({ t: "pos", x: +s.x.toFixed(2), z: +s.z.toFixed(2), yaw: +s.yaw.toFixed(2), mv: s.mv, sw: s.swing > 0, lvl: s.lvl, fr: s.fruit ? FRU.findIndex(f => f.n === s.fruit.n) : -1 })); }
   for (const f2 of s.fx) f2.t += dt; s.fx = s.fx.filter(f2 => f2.t < .5);
-  seasHud(); scoreDisplay.textContent = `LV ${s.lvl} · ${Math.max(0, Math.round(s.hp))}/${s.max} HP · QUESTS ${s.done.size}/10`;
+  seasHud(); scoreDisplay.textContent = `LV ${s.lvl} · ${Math.max(0, Math.round(s.hp))}/${s.max} HP · QUESTS ${s.done.size}/10${MP.on ? ` · 🌐 ${MP.others.size + 1} online` : ""}`;
 }
 function seasHud() {
   const s = X.sea, g = id => document.getElementById(id), q = s.quest;
-  g("hud-lv").textContent = "Lv " + s.lvl; g("hud-hp").style.width = Math.max(0, s.hp / s.max * 100) + "%"; g("hud-hpt").textContent = `${Math.max(0, Math.round(s.hp))} / ${s.max}`; g("hud-xp").style.width = s.xp / need(s.lvl) * 100 + "%"; g("hud-beli").textContent = "฿" + s.beli + (s.fruit ? " · 🍎 " + s.fruit.n : "");
-  g("hud-quest").innerHTML = q ? `<b>QUEST · Island ${q.k}</b><br>${q.boss ? "Defeat the boss" : "Defeat pirates"}: ${q.have}/${q.need}` : `<b>No quest</b><br>Find a quest board (flag islands) and press E`;
+  g("hud-lv").textContent = "Lv " + s.lvl; g("hud-hp").style.width = Math.max(0, s.hp / s.max * 100) + "%"; g("hud-hpt").textContent = `${Math.max(0, Math.round(s.hp))} / ${s.max}`; g("hud-xp").style.width = s.xp / need(s.lvl) * 100 + "%"; g("hud-beli").textContent = "฿" + s.beli + " · ⚔ " + WEAPONS[s.wp].n + (s.fruit ? " · 🍎 " + s.fruit.n : "") + (s.pots ? " · 🧪" + s.pots + " (H)" : "");
+  g("hud-quest").innerHTML = q ? `<b>QUEST · Island ${q.k}</b><br>${q.boss ? "Defeat the boss" : "Defeat pirates"}: ${q.have}/${q.need}` : `<b>No quest</b><br>Find Captain Pip on Island 1 and press E`; if (s.pts) g("hud-quest").innerHTML += `<br><b>★ ${s.pts} points: 1 Melee · 2 Health · 3 Speed</b>`;
   document.querySelectorAll("[data-sk]").forEach(b => { const k = b.dataset.sk, locked = s.lvl < SK[k].lv; b.style.setProperty("--cd", locked ? 1 : s.cds[k] / SK[k].cd); b.classList.toggle("locked", locked); b.title = locked ? `Unlocks at Lv ${SK[k].lv}` : ""; });
-  const pr = g("hud-prompt"); pr.hidden = !s.near; if (s.near) pr.textContent = `E — Quest board · Island ${s.near} (suggested Lv ${s.near * 3 - 2})`;
+  const pr = g("hud-prompt"); pr.hidden = !(s.near || s.ns); if (s.ns) pr.textContent = s.ns === "smith" ? "E — Blacksmith (swords & potions)" : "E — Fruit Dealer (roll for Capy Fruits)"; else if (s.near) pr.textContent = s.near > 1 && !s.done.has(s.near - 1) ? `🔒 Island ${s.near} — clear Island ${s.near - 1} first` : `E — Talk to Captain Pip · Island ${s.near} (suggested Lv ${s.near * 3 - 2})`;
   const m = g("minimap").getContext("2d"); m.clearRect(0, 0, 120, 120); m.fillStyle = "#1d5f8f"; m.beginPath(); m.arc(60, 60, 60, 0, 7); m.fill(); const sc = 60 / 150, P = (x, z) => [60 + (x - s.x) * sc, 60 + (z - s.z) * sc];
   ISLS.forEach((I, i) => { const [x, z] = P(I.x, I.z); m.fillStyle = s.done.has(i) ? "#e8c84a" : i ? "#5fae5f" : "#d8c27a"; m.beginPath(); m.arc(x, z, I.r * sc, 0, 7); m.fill(); if (q && q.k === i) { m.strokeStyle = "#fff"; m.lineWidth = 2; m.beginPath(); m.arc(x, z, I.r * sc + 2 + Math.sin(s.t * 5), 0, 7); m.stroke(); } });
   m.fillStyle = "#ff5a5a"; for (const e of s.en) if (!e.dead) { const [x, z] = P(e.x, e.z); if (Math.hypot(x - 60, z - 60) < 58) m.fillRect(x - 1, z - 1, e.boss ? 4 : 2, e.boss ? 4 : 2); }
   m.fillStyle = "#fff"; m.beginPath(); m.arc(60, 60, 3, 0, 7); m.fill();
 }
-function rig(x, y, z, yaw) { const c = Math.cos(yaw), n = Math.sin(yaw); return (ox, oy, oz, sx, sy, sz, col, ya = 0) => { GY = yaw + ya; box(x + c * ox + n * oz, y + oy, z - n * ox + c * oz, sx, sy, sz, col); }; }
+function rig(x, y, z, yaw) { const c = Math.cos(yaw), n = Math.sin(yaw), mk = f => (ox, oy, oz, sx, sy, sz, col, ya = 0) => { GY = yaw + ya; f(x + c * ox + n * oz, y + oy, z - n * ox + c * oz, sx, sy, sz, col); }, P = mk(box); P.b = mk(ball); return P; }
 const mixc = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 function drawCapyModel(s, t) {
+  OUT = true;
   const Y0 = (s.land ? 1.15 : .05 + Math.sin(t * 3) * .12) + (s.mv ? Math.abs(Math.sin(t * 14)) * .15 : 0), P = rig(s.x, Y0, s.z, s.yaw), w = s.mv ? Math.sin(t * 14) * .3 : 0;
-  const F = [.66, .46, .3], D = [.42, .29, .19], H = [.73, .53, .37], BL = [.88, .7, .5], R = [.78, .16, .18], K = [.1, .1, .14], W = [1, 1, 1], G = [.95, .8, .25];
-  for (const [lx, lz, ph] of [[-.5, -.7, 1], [.5, -.7, -1], [-.5, .7, -1], [.5, .7, 1]]) { P(lx, .38 + w * ph * .5, lz, .34, .6, .34, D); P(lx, .1, lz - .05, .4, .2, .5, K); }
-  P(0, 1, 0, 1.4, 1, 2.2, F); P(0, .62, 0, 1, .4, 1.8, BL); P(0, 1.1, .4, 1.52, .92, 1.5, R); P(0, 1.58, -.5, 1.5, .22, .55, R); P(0, .86, .2, 1.54, .15, 1.2, K); P(0, .86, -.42, .3, .2, .06, G); P(0, 1.1, -.36, .12, .12, .06, G); P(0, .9, 1.2, .3, .3, .28, D);
-  P(0, 1.5, -1.3, .95, .85, .95, H); P(-.5, 1.4, -1.4, .15, .4, .5, H); P(.5, 1.4, -1.4, .15, .4, .5, H); P(0, 1.22, -1.95, .62, .46, .45, BL); P(0, 1.34, -2.2, .3, .2, .1, [.15, .1, .08]);
-  P(-.28, 1.72, -1.78, .2, .22, .08, W); P(.28, 1.72, -1.78, .2, .22, .08, W); P(-.28, 1.72, -1.83, .11, .13, .06, K); P(.28, 1.72, -1.83, .11, .13, .06, K); P(-.28, 1.9, -1.8, .24, .06, .06, D); P(.28, 1.9, -1.8, .24, .06, .06, D);
-  P(-.34, 2.02, -1.1, .22, .28, .18, D); P(.34, 2.02, -1.1, .22, .28, .18, D);
-  P(0, 2.12, -1.3, 1.6, .1, 1.4, K); P(0, 2.4, -1.3, 1, .42, .92, K); P(0, 2.24, -1.3, 1.03, .1, .95, R); P(0, 2.43, -1.8, .24, .24, .05, W); P(.5, 2.62, -1.2, .1, .55, .12, [.9, .2, .2], .3);
+  const br = Math.sin(t * 2.2) * .03, bl = t % 4 < .12 ? .2 : 1, F = [.66, .46, .3], D = [.42, .29, .19], H = [.73, .53, .37], BL = [.88, .7, .5], R = s.coat || [.78, .16, .18], K = [.1, .1, .14], W = [1, 1, 1], G = [.95, .8, .25];
+  for (const [lx, lz, ph] of [[-.5, -.7, 1], [.5, -.7, -1], [-.5, .7, -1], [.5, .7, 1]]) { P.b(lx, .4 + w * ph * .5, lz, .42, .74, .42, D); P.b(lx, .12, lz - .06, .5, .26, .62, K); }
+  P.b(0, 1.02 + br, 0, 1.6, 1.25 + br, 2.5, F); P.b(0, .66, 0, 1.15, .6, 2, BL); P.b(0, 1.14, .5, 1.66, 1.05, 1.5, R); P.b(0, 1.62, -.4, 1.5, .34, .8, R); P(0, .86, .2, 1.54, .15, 1.2, K); P(0, .86, -.42, .3, .2, .06, G); P(0, 1.1, -.36, .12, .12, .06, G); P.b(Math.sin(t * 5) * .12, .9, 1.32, .4, .4, .4, D);
+  P.b(0, 1.5, -1.3, 1.2, 1.1, 1.2, H); P.b(-.55, 1.38, -1.4, .3, .5, .6, H); P.b(.55, 1.38, -1.4, .3, .5, .6, H); P.b(0, 1.2, -1.95, .78, .6, .65, BL); P.b(0, 1.36, -2.3, .3, .24, .2, [.15, .1, .08]);
+  P.b(-.3, 1.72, -1.84, .26, .28 * bl, .14, W); P.b(.3, 1.72, -1.84, .26, .28 * bl, .14, W); P.b(-.3, 1.72, -1.92, .14, .17 * bl, .1, K); P.b(.3, 1.72, -1.92, .14, .17 * bl, .1, K); P(-.28, 1.9, -1.8, .24, .06, .06, D); P(.28, 1.9, -1.8, .24, .06, .06, D);
+  P.b(-.4, 2.0, -1.1, .3, .38, .24, D); P.b(.4, 2.0, -1.1, .3, .38, .24, D);
+  P(0, 2.12, -1.3, 1.6, .1, 1.4, K); P.b(0, 2.46, -1.3, 1.05, .64, .98, K); P(0, 2.24, -1.3, 1.03, .1, .95, R); P(0, 2.43, -1.8, .24, .24, .05, W); P(.5, 2.62, -1.2, .1, .55, .12, [.9, .2, .2], .3 + Math.sin(t * 6) * .25);
   P(Math.sin(t * 7) * .12, 1.55, .9, .32, .12, 1.1, R, .1);
-  if (s.swing > 0) { const a = -1.3 + (1 - s.swing / .35) * 2.6; P(Math.sin(a) * 2 + .2, 1.2, -Math.cos(a) * 2, .2, .2, 2.8, [.9, .94, .98], a); P(Math.sin(a) * .8 + .2, 1.2, -Math.cos(a) * .8, .7, .15, .15, G, a); }
-  else { P(-.85, .95, .2, .16, .16, 1.5, [.55, .55, .6]); P(-.85, 1, -.6, .24, .2, .2, G); }
+  const wp = WEAPONS[s.wp || 0], L = wp.len;
+  if (s.swing > 0) { const a = -1.3 + (1 - s.swing / .35) * 2.6, sa = Math.sin(a), ca = Math.cos(a); P(sa * L * .7 + .2, 1.2, -ca * L * .7, .22, .22, L, wp.c, a); P(sa * .8 + .2, 1.2, -ca * .8, .75, .15, .15, G, a); if (wp.p > 800) P(sa * L * .7 + .2, 1.2, -ca * L * .7, .42, .42, L * 1.05, mixc(wp.c, [1, 1, 1], .5), a); }
+  else { P(-.85, .95, .2, .16, .16, L * .55, wp.c); P(-.85, 1, -.6, .24, .2, .2, G); }
+  P.b(0, 1.45, -.78, .16, .16, .1, G); P.b(0, 1.15, -.85, .16, .16, .1, G); P.b(.3, 1.72, -1.95, .3, .3 * bl, .1, [.08, .08, .1]); P.b(0, .5, 1.1, 1.3, .7, .6, R);
   if (s.fruit) for (let i = 0; i < 3; i++) { const a = t * 3 + i * 2.1; P(Math.cos(a) * 1.9, 2.8 + Math.sin(t * 2 + i) * .25, Math.sin(a) * 1.9, .35, .35, .35, s.fruit.col); }
 }
 function drawEnemy(e, t) {
-  const sc = e.boss ? 2.2 : 1, y = 1.15 + Math.sin(t * 5 + e.x) * .05, Q = rig(e.x, y, e.z, e.yaw), P = (ox, oy, oz, sx, sy, sz, c, ya) => Q(ox * sc, oy * sc, oz * sc, sx * sc, sy * sc, sz * sc, c, ya), fl = e.wind > 0 ? .55 : 0, wl = e.wind > 0 ? .5 : 0, W = [1, 1, 1], K = [.08, .08, .1];
+  OUT = true;
+  const sc = (e.boss ? 2.2 : 1) * (e.dead ? Math.max(.05, e.die / .5) : 1), y = 1.15 + Math.sin(t * 5 + e.x) * .05, Q = rig(e.x, y, e.z, e.yaw), P = (ox, oy, oz, sx, sy, sz, c, ya) => Q(ox * sc, oy * sc, oz * sc, sx * sc, sy * sc, sz * sc, c, ya), fl = Math.max(e.wind > 0 ? .55 : 0, e.flash > 0 ? .75 : 0), wl = e.wind > 0 ? .5 : 0, W = [1, 1, 1], K = [.08, .08, .1];
+  P.b = (ox, oy, oz, sx, sy, sz, c, ya) => Q.b(ox * sc, oy * sc, oz * sc, sx * sc, sy * sc, sz * sc, c, ya);
   if (e.type === "crab") {
     const c = mixc(e.boss ? [.5, .2, .7] : [.85, .3, .25], W, fl), d = mixc([.65, .15, .15], W, fl), sn = Math.abs(Math.sin(t * 6)) * .15;
-    P(0, .55, 0, 1.8, .7, 1.5, c); P(0, .95, 0, 1.4, .25, 1.2, mixc(c, W, .2));
+    P.b(0, .62, 0, 2.1, 1.05, 1.8, c);
     for (let i = 0; i < 3; i++) for (const sd of [-1, 1]) P(sd * 1.05, .28, -.5 + i * .55, .75, .14, .16, d);
-    for (const sd of [-1, 1]) { P(sd * 1.1, .8 + wl, -.9, .25, .25, .8, c); P(sd * 1.1, .9 + wl, -1.5, .6, .24 + sn, .5, d); P(sd * 1.1, 1.1 + wl, -1.5, .6, .2, .5, d); P(sd * .4, 1.2, -.7, .1, .45, .1, c); P(sd * .4, 1.5, -.7, .22, .22, .22, W); P(sd * .4, 1.5, -.82, .1, .1, .1, K); }
+    for (const sd of [-1, 1]) { P(sd * 1.1, .8 + wl, -.9, .25, .25, .8, c); P.b(sd * 1.1, .95 + wl, -1.5, .7, .3 + sn, .6, d); P(sd * .4, 1.2, -.7, .1, .45, .1, c); P.b(sd * .4, 1.5, -.7, .3, .3, .3, W); P(sd * .4, 1.5, -.82, .1, .1, .1, K); }
   } else if (e.type === "skel") {
     const b = mixc([.92, .9, .8], [1, .5, .5], fl), sw = Math.sin(t * 5 + e.z) * .08;
     for (const sd of [-1, 1]) { P(sd * .25, .55, 0, .17, 1.1, .17, b); P(sd * .25, .05, -.1, .26, .12, .36, b); P(sd * .7, 1.5, 0, .15, .8, .15, b); }
-    P(0, 1.15, 0, .8, .25, .45, b); P(0, 1.75, 0, .9, .9, .5, b); for (let i = 0; i < 3; i++) P(0, 1.5 + i * .25, -.02, .92, .07, .53, [.25, .22, .2]); P(0, 2.55, 0, .62, .55, .55, b); P(-.15, 2.6, -.28, .14, .14, .05, K); P(.15, 2.6, -.28, .14, .14, .05, K); P(0, 2.3, -.28, .3, .08, .05, K);
+    P(0, 1.15, 0, .8, .25, .45, b); P(0, 1.75, 0, .9, .9, .5, b); for (let i = 0; i < 3; i++) P(0, 1.5 + i * .25, -.02, .92, .07, .53, [.25, .22, .2]); P.b(0, 2.55, 0, .72, .66, .66, b); P(-.15, 2.6, -.28, .14, .14, .05, K); P(.15, 2.6, -.28, .14, .14, .05, K); P(0, 2.3, -.28, .3, .08, .05, K);
     P(0, 2.9, 0, 1.1, .12, .95, K); P(0, 3.1, 0, .6, .3, .6, K); P(.8, 1.4 + wl * 1.5, -.7 - wl, .1, .1, 1.4, [.72, .74, .8], sw);
   } else {
     const sk = mixc([.85, .65, .5], W, fl), sh = mixc([.2, .3, .65], W, fl), sn = Math.sin(t * 4 + e.x) * .06;
-    for (const sd of [-1, 1]) { P(sd * .45, .6, 0, .6, 1.2, .6, [.15, .15, .22]); P(sd * 1.25, 1.7 - wl, 0, .6, 1.3, .6, sk); P(sd * 1.25, 1 + wl * 1.2, -.3 - wl, .8, .7, .8, mixc([.3, .25, .25], W, fl)); }
-    P(0, 1.9 + sn, 0, 1.9, 1.6, 1.2, sh); for (let i = 0; i < 3; i++) P(0, 1.4 + i * .5 + sn, -.02, 1.92, .12, 1.22, W); P(0, 3.05 + sn, -.1, .95, .85, .9, sk); P(0, 3.55 + sn, -.1, 1.05, .25, 1, W); P(-.22, 3.1 + sn, -.58, .16, .14, .06, K); P(.22, 3.1 + sn, -.58, .16, .14, .06, K); P(0, 2.85 + sn, -.58, .4, .1, .06, [.4, .2, .15]);
+    for (const sd of [-1, 1]) { P(sd * .45, .6, 0, .6, 1.2, .6, [.15, .15, .22]); P(sd * 1.25, 1.7 - wl, 0, .6, 1.3, .6, sk); P.b(sd * 1.25, 1 + wl * 1.2, -.3 - wl, .95, .85, .95, mixc([.3, .25, .25], W, fl)); }
+    P.b(0, 1.9 + sn, 0, 2.1, 1.8, 1.4, sh); for (let i = 0; i < 3; i++) P(0, 1.4 + i * .5 + sn, -.02, 1.92, .12, 1.22, W); P.b(0, 3.05 + sn, -.1, 1.05, 1, 1, sk); P(0, 3.55 + sn, -.1, 1.05, .25, 1, W); P(-.22, 3.1 + sn, -.58, .16, .14, .06, K); P(.22, 3.1 + sn, -.58, .16, .14, .06, K); P(0, 2.85 + sn, -.58, .4, .1, .06, [.4, .2, .15]);
   }
-  GY = 0; box(e.x, y + 3.6 * sc + (e.type === "brute" ? .8 : 0), e.z, 2.2 * sc, .2, .2, [.2, .08, .08]); box(e.x - (1 - e.hp / e.max) * 1.1 * sc, y + 3.6 * sc + (e.type === "brute" ? .8 : 0), e.z + .05, 2.2 * sc * e.hp / e.max, .2, .2, e.boss ? [.9, .2, .8] : [.95, .25, .25]);
+  OUT = false; GY = 0; if (e.dead) return; box(e.x, y + 3.6 * sc + (e.type === "brute" ? .8 : 0), e.z, 2.2 * sc, .2, .2, [.2, .08, .08]); box(e.x - (1 - e.hp / e.max) * 1.1 * sc, y + 3.6 * sc + (e.type === "brute" ? .8 : 0), e.z + .05, 2.2 * sc * e.hp / e.max, .2, .2, e.boss ? [.9, .2, .8] : [.95, .25, .25]);
+}
+function drawNpc(x, z, id, t, s) {
+  const P = rig(x, 1.15, z, Math.atan2(-(s.x - x), -(s.z - z))), shop = typeof id === "string", coat = id === "smith" ? [.35, .35, .4] : id === "dealer" ? [.55, .2, .7] : [.15, .35, .7], hat = id === "smith" ? [.3, .2, .15] : id === "dealer" ? [.95, .8, .25] : [.95, .95, .9], br = Math.sin(t * 2 + x) * .04, sk = [.85, .65, .5], K = [.1, .1, .1];
+  OUT = true;
+  P.b(-.3, .5, 0, .5, 1, .5, [.2, .2, .25]); P.b(.3, .5, 0, .5, 1, .5, [.2, .2, .25]); P.b(0, 1.6 + br, 0, 1.4, 1.5, .95, coat); P.b(-.85, 1.55, 0, .45, 1.2, .45, coat); P.b(.85, 1.55, 0, .45, 1.2, .45, coat);
+  P.b(0, 2.7 + br, 0, .9, .85, .85, sk); P.b(-.2, 2.78, -.4, .14, .14, .08, K); P.b(.2, 2.78, -.4, .14, .14, .08, K); P.b(0, 3.2 + br, 0, 1.1, .4, 1.1, hat); P.b(0, 3.03, 0, 1.3, .12, 1.3, hat);
+  if (id === "smith") { P(1.1, 1.3, -.5, .25, 1.8, .25, [.75, .75, .8]); P(0, 1.1, -.55, 1.3, .7, .25, [.3, .2, .15]); }
+  else if (id === "dealer") P.b(0, 4.3 + Math.sin(t * 3) * .2, 0, .9, .9, .9, FRU[Math.floor(t / 1.2) % FRU.length].col);
+  else { const free = !s.done.has(id) && (id === 1 || s.done.has(id - 1)), act = s.quest && s.quest.k === id, y = Math.sin(t * 4) * .22; if (free && !act) { P(0, 4.6 + y, 0, .35, .95, .35, [1, .85, .2]); P.b(0, 3.9 + y, 0, .42, .42, .42, [1, .85, .2]); } else if (act) P.b(0, 4.3 + y, 0, .6, .6, .6, [.5, .8, 1]); }
+  OUT = false; GY = 0;
 }
 function drawSeas() {
   const s = X.sea, t = performance.now() / 1000, sky = [.62, .82, .96]; GY = 0;
@@ -750,13 +841,14 @@ function drawSeas() {
     const B = BIOME(i || 1); box(I.x, .3, I.z, 33, 1.2, 33, [.9, .82, .55]); box(I.x, .75, I.z, 27, .8, 27, B.g);
     for (const [px, pz] of PALMS) { box(I.x + px, 2.6, I.z + pz, .5, 3, .5, [.5, .34, .2]); box(I.x + px, 4.3, I.z + pz, 3.4, .5, 3.4, B.t); box(I.x + px, 4.8, I.z + pz, 1.6, .4, 1.6, mixc(B.t, [1, 1, 1], .2)); }
     for (const [px, pz] of ROCKS) { box(I.x + px, 1.6, I.z + pz, 2.2, 1.6, 2, [.5, .5, .55]); box(I.x + px + .5, 2.5, I.z + pz, 1.2, .8, 1.2, [.6, .6, .65]); }
-    if (i) { const bx = I.x, bz = I.z + 12; box(bx - 1, 2, bz, .3, 3, .3, [.4, .28, .18]); box(bx + 1, 2, bz, .3, 3, .3, [.4, .28, .18]); box(bx, 3.2, bz, 3, 1.6, .3, s.done.has(i) ? [.9, .8, .3] : [.75, .55, .3]); box(I.x, 4.5, I.z, .25, 7, .25, [.4, .3, .2]); box(I.x + 1.4, 7, I.z, 2.6, 1.5, .1, s.done.has(i) ? [.95, .8, .25] : i === 10 ? [.5, .2, .7] : [.85, .25, .25]); }
-    else { box(-6, 2.2, 6, 5, 3, 4, [.7, .5, .3]); box(-6, 4.2, 6, 6, .6, 5, [.6, .25, .2]); box(-6, 1.8, 3.9, 1, 2, .2, [.3, .2, .12]); }
+    if (i) { drawNpc(I.x, I.z + 12, i, t, s); box(I.x, 4.5, I.z, .25, 7, .25, [.4, .3, .2]); box(I.x + 1.4, 7, I.z, 2.6, 1.5, .1, s.done.has(i) ? [.95, .8, .25] : i > s.done.size + 1 ? [.5, .5, .55] : i === 10 ? [.5, .2, .7] : [.85, .25, .25]); }
+    else { drawNpc(8, 6, "smith", t, s); drawNpc(-3, 11, "dealer", t, s); box(-6, 2.2, 6, 5, 3, 4, [.7, .5, .3]); box(-6, 4.2, 6, 6, .6, 5, [.6, .25, .2]); box(-6, 1.8, 3.9, 1, 2, .2, [.3, .2, .12]); }
   });
   const bob = Math.sin(t * 1.6) * .15; box(-24, .3 + bob, 8, 6, 1.8, 15, [.45, .28, .16]); box(-24, 1.5 + bob, 8, 5.4, .3, 14, [.6, .42, .25]); box(-24, 1 + bob, -.2, 3, 1.4, 2, [.55, .36, .2]); box(-24, 6 + bob, 8, .35, 9, .35, [.35, .24, .15]); box(-24, 7 + bob, 8, .2, 5, 4.4, [.97, .96, .9]); box(-24, 11 + bob, 8, .1, 1.4, 2.4, [.08, .08, .1]);
-  for (const e of s.en) if (!e.dead) drawEnemy(e, t);
+  for (const e of s.en) if (!e.dead || e.die > 0) drawEnemy(e, t);
+  GY = 0; for (const p of s.parts) { const k = Math.max(.15, p.life * 2); ball(p.x, p.y, p.z, p.sz * k, p.sz * k, p.sz * k, p.col); }
   for (const f of s.fx) { const k = f.t / .5, r = f.r * (.3 + k * .8) * 2; GY = 0; box(f.x, .9, f.z, r, .12 * (1 - k) + .02, r, f.col); box(f.x, 1.2, f.z, r * .6, .1 * (1 - k) + .02, r * .6, mixc(f.col, [1, 1, 1], .5)); }
-  if (!(s.inv > 0 && Math.floor(t * 14) % 2)) drawCapyModel(s, t); GY = 0;
+  mpDraw(t); if (!(s.inv > 0 && Math.floor(t * 14) % 2)) drawCapyModel(s, t); GY = 0; OUT = false;
 }
 function drawSeas2D() { ctx.fillStyle = "#12304a"; ctx.fillRect(0, 0, 800, 450); ctx.fillStyle = "#fff"; ctx.font = "bold 20px system-ui"; ctx.textAlign = "center"; ctx.fillText("Capy Seas needs WebGL (try Chrome, Edge or Firefox).", 400, 225); ctx.textAlign = "left"; }
 // ---- Pond Snake ----
@@ -908,3 +1000,5 @@ $("#buddy-form").addEventListener("submit", async e => {
   if (BUDDY.endpoint) { try { const res = await fetch(BUDDY.endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: q }) }); r = (await res.json()).reply || ""; } catch {} }
   setTimeout(() => buddyAdd(r || buddyReply(q), "bot"), 300);
 });
+
+try { $("#mp-url").value = localStorage.getItem("capyMpUrl") || "ws://localhost:8787"; } catch { $("#mp-url").value = "ws://localhost:8787"; }
