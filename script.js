@@ -27,7 +27,7 @@ let isPaused = false;
 let animationId = 0;
 let previousTime = 0;
 let score = 0;
-let bestScores = { "Capy Pong": 0, "Mud Bricks": 0, "Capy Blaster": 0, "Capy Seas": 0, "Pond Snake": 0, "Capy Hop": 0, "Neon Dodge": 0, "Cube Canyon": 0, "Pocket Garden": 0, "Snack Catch": 0 };
+let bestScores = { "Capy Pong": 0, "Mud Bricks": 0, "Capy Blaster": 0, "Bee Swarm": 0, "Pond Snake": 0, "Capy Hop": 0, "Neon Dodge": 0, "Cube Canyon": 0, "Pocket Garden": 0, "Snack Catch": 0 };
 try { bestScores = { ...bestScores, ...JSON.parse(localStorage.getItem("capyBest") || "{}") }; } catch {}
 let audioContext = null;
 let toastTimer = null;
@@ -40,7 +40,7 @@ const GAME_INFO = {
   "Pocket Garden": { description: "Match the garden pairs in 3 stages. Fewer mistakes, cozier vibes.", controls: "Click or tap cards to flip them. P pauses." },
   "Snack Catch": { description: "Catch fruit, dodge rocks, and keep all 3 hearts. Speeds up every 8 fruit.", controls: "Move: A / D only" },
   "Capy Blaster": { description: "Blast the invading space bugs across 10 waves. Survive with 5 hearts.", controls: "Move: W A S D    Shoot: Space (hold)" },
-  "Capy Seas": { description: "Be a pirate legend! Take quests, grind levels, unlock Z/X/C skills, find Capy Fruits and sail 10 islands to defeat the Kraken Crab King.", controls: "WASD move · Space sword · Z X C skills · E talk / shop · H potion · Arrows/drag camera" },
+  "Bee Swarm": { description: "Collect pollen from flowers, make honey at your hive, hatch more bees and unlock new zones! Your bees gather pollen for you.", controls: "WASD move · E hive/shop · Arrows or drag = camera · tool auto-collects" },
   "Pond Snake": { description: "Glide through the pond and eat clovers. Don't hit the wall or yourself. 10 speed stages.", controls: "Steer: W A S D" },
   "Capy Pong": { description: "Beat the AI in 10 stages of faster and faster rallies. You have 3 lives.", controls: "Move paddle: W / S" },
   "Mud Bricks": { description: "Smash the mud bricks across 10 levels. Space launches the ball.", controls: "Move: A / D    Launch: Space" },
@@ -107,9 +107,9 @@ function stopMusic() { clearInterval(musicTimer); musicTimer = null; if (ambient
 function startAmbient() { try { const c = audio(), n = c.sampleRate * 2, b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0); let l = 0; for (let i = 0; i < n; i++) { l = l * .98 + (Math.random() * 2 - 1) * .1; d[i] = l * 4; }
   const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), o = c.createOscillator(), og = c.createGain(); s.buffer = b; s.loop = true; f.type = "lowpass"; f.frequency.value = 500; g.gain.value = .05; o.frequency.value = .12; og.gain.value = .03; o.connect(og); og.connect(g.gain); s.connect(f); f.connect(g); g.connect(master); s.start(); o.start(); ambient = () => { try { s.stop(); o.stop(); } catch {} }; } catch {} }
 function startMusic(name) {
-  stopMusic(); if (!prefs.sound || !prefs.music) return; if (name === "Capy Seas") startAmbient();
+  stopMusic(); if (!prefs.sound || !prefs.music) return;
   let h = 0; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  const mel = name === "Capy Seas" ? [0,0,7,7,9,9,7,4,5,5,4,4,2,2,0,0] : MEL[h % 4], root = [196, 220, 246, 262, 174][h % 5], step = 60 / [108, 124, 96, 136][(h >> 3) % 4] / 2, wave = ["triangle", "square", "sine", "triangle"][(h >> 5) % 4]; let i = 0;
+  const mel = MEL[h % 4], root = [196, 220, 246, 262, 174][h % 5], step = 60 / [108, 124, 96, 136][(h >> 3) % 4] / 2, wave = ["triangle", "square", "sine", "triangle"][(h >> 5) % 4]; let i = 0;
   musicTimer = setInterval(() => { try { audio(); const s = i++ % 16; tone(root * Math.pow(2, mel[s] / 12), step * .9, wave, wave === "square" ? .012 : .02); if (s % 4 === 0) tone(root / 2 * Math.pow(2, [0, 5, 7, 3][s / 4] / 12), step * 3.6, "sine", .03); } catch {} }, step * 1000);
 }
 function sound(type = "click") {
@@ -288,8 +288,8 @@ function openGame(name) {
   if (!GAME_INFO[name]) return;
   stopGame(); currentGame = name; dialog.showModal();
   $("#touch-controls").hidden = name === "Pocket Garden";
-  $("#seas-hud").hidden = name !== "Capy Seas"; $("#mp-box").hidden = name !== "Capy Seas"; $$(".seas-only").forEach(b => b.hidden = name !== "Capy Seas"); glc.style.touchAction = name === "Capy Seas" ? "none" : "pan-y";
-  const use3d = (name === "Cube Canyon" || name === "Capy Seas") && initGL(); glc.hidden = !use3d; canvas.hidden = use3d;
+    $("#bee-hud").hidden = name !== "Bee Swarm"; $$(".bee-only").forEach(b => b.hidden = name !== "Bee Swarm"); glc.style.touchAction = name === "Bee Swarm" ? "none" : "pan-y";
+  const use3d = (name === "Cube Canyon" || name === "Bee Swarm") && initGL(); glc.hidden = !use3d; canvas.hidden = use3d;
   $("#dialog-title").textContent = name;
   $("#controls-text").textContent = GAME_INFO[name].controls;
   $("#overlay-title").textContent = name;
@@ -310,13 +310,12 @@ function resetGame() {
   keys.clear();
 }
 function stopGame() {
-  stopMusic(); mpStop(); if (currentGame === "Capy Seas" && X.sea) saveSeas();
+  stopMusic(); clearLabels(); if (currentGame === "Bee Swarm" && X.bee) saveBee();
   isRunning = false; isPaused = false; cancelAnimationFrame(animationId); animationId = 0; keys.clear(); pauseButton.textContent = "Pause";
 }
 function startOrResume() {
   if (!currentGame) return;
   if (state.hit || state.won) resetGame();
-  if (currentGame === "Capy Seas" && !mpStart()) return;
   isPaused = false; isRunning = true; overlay.hidden = true; startMusic(currentGame); pauseButton.textContent = "Pause";
   previousTime = performance.now(); cancelAnimationFrame(animationId); animationId = requestAnimationFrame(gameLoop); sound("start");
 }
@@ -384,7 +383,7 @@ function gameLoop(now) {
   if (currentGame === "Pocket Garden") updateGarden(dt);
   if (currentGame === "Snack Catch") updateSnack(dt);
   if (currentGame === "Capy Blaster") updateBlaster(dt);
-  if (currentGame === "Capy Seas") updateSeas(dt);
+  if (currentGame === "Bee Swarm") updateBee(dt);
   if (currentGame === "Pond Snake") updateSnake(dt);
   if (currentGame === "Capy Pong") updatePong(dt);
   if (currentGame === "Mud Bricks") updateBricks(dt);
@@ -585,16 +584,16 @@ function drawGL() {
   box(X - .45, Y + .2 - (state.jump ? 0 : w), .6, .3, .4, .3, [.42, .29, .19]); box(X + .45, Y + .2 + (state.jump ? 0 : w), .6, .3, .4, .3, [.42, .29, .19]);
   box(X, .02, 0, 1.6, .03, 2.2, [.36, .5, .42]);
 }
-glc.addEventListener("pointermove", e => { if (e.buttons && currentGame === "Capy Seas") { CAM.yaw -= e.movementX * .006; CAM.pitch = clamp(CAM.pitch + e.movementY * .004, .25, 1.3); } });
-glc.addEventListener("wheel", e => { if (currentGame === "Capy Seas") { e.preventDefault(); CAM.dist = clamp(CAM.dist + e.deltaY * .012, 8, 32); } }, { passive: false });
+glc.addEventListener("pointermove", e => { if (e.buttons && currentGame === "Bee Swarm") { CAM.yaw -= e.movementX * .006; CAM.pitch = clamp(CAM.pitch + e.movementY * .004, .25, 1.3); } });
+glc.addEventListener("wheel", e => { if (currentGame === "Bee Swarm") { e.preventDefault(); CAM.dist = clamp(CAM.dist + e.deltaY * .012, 8, 32); } }, { passive: false });
 glc.addEventListener("pointerdown", () => canvas.dispatchEvent(new PointerEvent("pointerdown")));
 
-// ================= Capy Blaster (shooter), Capy Seas (3D RPG), Pond Snake =================
+// ================= Capy Blaster (shooter), Pond Snake =================
 const X = {}, clamp = (v, a, b) => Math.max(a, Math.min(b, v)), dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const axis = () => [(keys.has("d") ? 1 : 0) - (keys.has("a") ? 1 : 0), (keys.has("s") ? 1 : 0) - (keys.has("w") ? 1 : 0)];
 function initNewGames() {
   X.b = { x: 400, y: 400, bul: [], en: [], eb: [], hp: 5, cd: 0, kills: 0, inv: 0, t: 0, spawn: 1, stars: Array.from({ length: 60 }, () => [Math.random() * 800, Math.random() * 450, .3 + Math.random()]) };
-  initSeas();
+  initBee();
   X.p = { y: 185, ay: 185, bx: 400, by: 225, vx: -300, vy: 120, pts: 0, l: 3, t: 0 };
   X.m = { x: 355, w: 90, bx: 400, by: 408, vx: 0, vy: 0, live: false, l: 3, bricks: [] }; if (currentGame === "Mud Bricks") buildBricks();
   X.s = { body: [[20, 11], [19, 11], [18, 11]], dir: [1, 0], t: 0, food: null, eaten: 0 };
@@ -628,229 +627,98 @@ function drawBlaster() {
   ctx.fillStyle = "#ba895e"; ctx.beginPath(); ctx.ellipse(0, -2, 9, 8, 0, 0, 7); ctx.fill(); ctx.fillStyle = "#d5a67b"; ctx.beginPath(); ctx.ellipse(0, 2, 6, 4, 0, 0, 7); ctx.fill(); ctx.fillStyle = "#222"; ctx.fillRect(-4, -5, 2, 3); ctx.fillRect(2, -5, 2, 3);
   ctx.fillStyle = "#ffb347"; ctx.fillRect(-2, 18, 4, 5 + Math.random() * 6); ctx.restore();
 }
-// ---- Capy Seas: 3D pirate RPG (WebGL) ----
-let seasSave = null; try { seasSave = JSON.parse(localStorage.getItem("capySeas") || "null"); } catch {}
-const ISLS = Array.from({ length: 11 }, (_, i) => i ? { x: Math.cos(i * 1.15) * (34 + i * 11), z: Math.sin(i * 1.15) * (34 + i * 11), r: 16 } : { x: 0, z: 0, r: 16 });
-const PALMS = [[-8,-6],[8,-4],[-4,8],[6,7],[0,-10],[-10,4]], ROCKS = [[10,-8],[-11,-3],[3,11]];
-const BIOME = k => k <= 3 ? { g: [.35,.65,.35], t: [.25,.6,.3] } : k <= 6 ? { g: [.72,.5,.25], t: [.85,.42,.15] } : k <= 8 ? { g: [.86,.93,.96], t: [.6,.82,.92] } : { g: [.3,.22,.22], t: [.65,.15,.1] };
-const FRU = [{ n: "Flame", col: [1,.45,.1], m: 1.5, r: 1 }, { n: "Ice", col: [.5,.85,1], m: 1.6, r: 1 }, { n: "Quake", col: [.82,.7,.95], m: 1.8, r: 2 }, { n: "Spring", col: [.6,.9,.4], m: 1.2, r: 0 }, { n: "Spike", col: [.8,.8,.85], m: 1.25, r: 0 }, { n: "Light", col: [1,1,.6], m: 1.5, r: 1 }, { n: "Magma", col: [.9,.3,.1], m: 1.9, r: 2 }, { n: "Dark", col: [.4,.2,.55], m: 2.1, r: 2 }, { n: "Dragon", col: [.3,.9,.7], m: 2.7, r: 3 }];
-const WEAPONS = [{ n: "Rusty Cutlass", p: 0, m: 1, c: [.7,.7,.75], len: 2.8 }, { n: "Steel Saber", p: 300, m: 1.4, c: [.85,.9,1], len: 3 }, { n: "Captain's Cutlass", p: 900, m: 1.9, c: [.95,.8,.3], len: 3.2 }, { n: "Flame Blade", p: 2500, m: 2.6, c: [1,.45,.1], len: 3.4 }, { n: "Kraken Slayer", p: 6000, m: 3.5, c: [.55,.25,.85], len: 3.8 }];
-const RAR = ["Common", "Uncommon", "Rare", "Legendary"], RCOL = ["#cfd8dc", "#7ee081", "#6aa7ff", "#ffb347"];
-const SK = { z: { cd: 3.5, lv: 1 }, x: { cd: 5, lv: 5 }, c: { cd: 10, lv: 10 } }, CAM = { yaw: 0, pitch: .75, dist: 17, x: 0, z: 0, tx: 0, tz: 0 };
-const maxHp = l => 20 + l * 5 + (X.sea?.st?.hp || 0) * 8, pdmg = l => Math.round((3 + l * 1.6 + (X.sea?.st?.dmg || 0) * 1.5) * WEAPONS[X.sea?.wp || 0].m), need = l => l * 14 + 10;
-function mkEn(k, x, z, boss) { const type = boss ? (k === 5 ? "skel" : "crab") : k <= 3 ? "crab" : k <= 6 ? "skel" : "brute", r = (type === "brute" ? 1.6 : 1.1) * (boss ? 2 : 1), hp = boss ? (k === 5 ? 160 : 420) : 6 + k * 8; return { x, z, hx: x, hz: z, k, boss, type, r, hp, max: hp, dead: false, rt: 0, cd: Math.random(), wind: 0, yaw: 0, die: 0, flash: 0 }; }
-function initSeas() {
-  const sv = seasSave || {}, done = new Set(sv.done || []); if (done.size >= 10) done.clear(); const en = [];
-  for (let k = 1; k <= 10; k++) { const n = Math.min(10, k + 5); for (let i = 0; i < n; i++) { const a = i / n * 6.28 + k, d = 5 + (i % 3) * 3; en.push(mkEn(k, ISLS[k].x + Math.cos(a) * d, ISLS[k].z + Math.sin(a) * d, false)); } if (k === 5 || k === 10) en.push(mkEn(k, ISLS[k].x, ISLS[k].z, true)); }
-  const lvl = sv.lvl || 1; X.sea = { x: 0, z: 8, yaw: 0, lvl, xp: sv.xp || 0, beli: sv.beli || 0, fruit: sv.fruit ? FRU.find(f => f.n === sv.fruit.n) || null : null, max: maxHp(lvl), hp: maxHp(lvl), swing: 0, hit: new Set(), en, done, quest: null, kills: 0, inv: 0, t: 0, mv: false, land: true, cds: { z: 0, x: 0, c: 0 }, dash: 0, fx: [], near: 0, eHeld: false, combat: 0, parts: [], wp: sv.wp || 0, owned: sv.owned || [0], fruits: sv.fruits || (sv.fruit ? [sv.fruit.n] : []), pots: sv.pots || 0, shop: "", ns: "", rolling: false, pts: sv.pts || 0, st: sv.st || { dmg: 0, hp: 0, spd: 0 }, kh: {}, stepT: 0 };
-  Object.assign(CAM, { yaw: 0, pitch: .75, dist: 17, x: 0, z: 8 }); X.sea.max = X.sea.hp = maxHp(lvl);
-}
-function saveSeas() { const s = X.sea; if (!s) return; seasSave = { lvl: s.lvl, xp: s.xp, beli: s.beli, fruit: s.fruit, done: [...s.done], pts: s.pts, st: s.st, wp: s.wp, owned: s.owned, fruits: s.fruits, pots: s.pots }; try { localStorage.setItem("capySeas", JSON.stringify(seasSave)); } catch {} saveProgress(); }
-const MP = { ws: null, on: false, id: null, others: new Map(), tags: new Map(), t: 0 }, COATS = [[.2,.4,.8],[.2,.6,.3],[.6,.2,.7],[.9,.5,.1],[.1,.6,.6],[.8,.3,.5]];
-function mpStart() {
-  if (!$("#mp-online").checked) { mpStop(); return true; }
-  if (!user) { toast("Sign in to play online."); authDialog.showModal(); return false; }
-  if (MP.ws && MP.ws.readyState <= 1) return true;
-  const url = $("#mp-url").value.trim(); try { localStorage.setItem("capyMpUrl", url); } catch {}
-  let ws; try { ws = new WebSocket(url); } catch { toast("Invalid server address — playing solo."); return true; }
-  MP.ws = ws;
-  ws.onopen = () => ws.send(JSON.stringify({ t: "join", name: user, room: +$("#mp-room").value }));
-  ws.onmessage = ev => { let m; try { m = JSON.parse(ev.data); } catch { return; }
-    if (m.t === "welcome") { MP.on = true; MP.id = m.id; toast(`Joined Server ${m.room} 🌐`); }
-    else if (m.t === "err") { toast(m.m); mpStop(); }
-    else if (m.t === "state" && MP.on) { const seen = new Set();
-      for (const p of m.p) { if (p.id === MP.id) continue; seen.add(p.id); let r = MP.others.get(p.id); if (!r) { r = { x: p.x, z: p.z, yaw: p.yaw, name: p.name, coat: COATS[p.id % COATS.length] }; MP.others.set(p.id, r); } Object.assign(r, { tx: p.x, tz: p.z, tyaw: p.yaw, mv: p.mv, sw: p.sw, lvl: p.lvl, fruit: FRU[p.fr] || null }); }
-      for (const id of [...MP.others.keys()]) if (!seen.has(id)) { MP.others.delete(id); MP.tags.get(id)?.remove(); MP.tags.delete(id); } } };
-  ws.onerror = () => toast("Couldn't reach the server — is server.js running? Playing solo.");
-  ws.onclose = () => { MP.on = false; };
-  return true;
-}
-function mpStop() { try { MP.ws?.close(); } catch {} MP.ws = null; MP.on = false; MP.others.clear(); MP.tags.forEach(t => t.remove()); MP.tags.clear(); }
-function mpDraw(t) {
-  for (const [id, r] of MP.others) {
-    r.x += (r.tx - r.x) * .25; r.z += (r.tz - r.z) * .25; let d = r.tyaw - r.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); r.yaw += d * .25;
-    r.land = ISLS.some(i => Math.hypot(r.x - i.x, r.z - i.z) < i.r); r.swing = r.sw ? .35 * (1 - (t * 3) % 1) : 0; drawCapyModel(r, t); GY = 0; OUT = false;
-    let tag = MP.tags.get(id); if (!tag) { tag = document.createElement("span"); tag.className = "nametag"; $("#canvas-wrap").appendChild(tag); MP.tags.set(id, tag); }
-    const [sx, sy] = proj(r.x, 4.4, r.z); tag.style.left = (sx + 1) * 50 + "%"; tag.style.top = (1 - sy) * 50 + "%"; tag.textContent = `${r.name} · Lv ${r.lvl || 1}`;
-  }
-}
-function proj(x, y, z) { const c = VPM, w = c[3] * x + c[7] * y + c[11] * z + c[15]; return [(c[0] * x + c[4] * y + c[8] * z + c[12]) / w, (c[1] * x + c[5] * y + c[9] * z + c[13]) / w]; }
-function popText(x, y, z, txt, col = "#fff", big = false) { if (!VPM) return; const [sx, sy] = proj(x, y, z), p = document.createElement("span"); p.className = "pop" + (big ? " crit" : ""); p.textContent = txt; p.style.color = col; p.style.left = (sx + 1) * 50 + "%"; p.style.top = (1 - sy) * 50 + "%"; $("#canvas-wrap").appendChild(p); setTimeout(() => p.remove(), 900); }
-function burst3(x, y, z, n, col, sp = 6, up = 4) { const s = X.sea; if (!s || !prefs.vfx || prefs.reduceMotion) return; for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = sp * (.4 + Math.random()); s.parts.push({ x, y, z, vx: Math.cos(a) * v, vy: up * (.4 + Math.random()), vz: Math.sin(a) * v, life: .5 + Math.random() * .4, col, sz: .18 + Math.random() * .22 }); } if (s.parts.length > 220) s.parts.splice(0, s.parts.length - 220); }
-function hurtFlash() { const h = $("#hurt-flash"); h.classList.remove("on"); void h.offsetWidth; h.classList.add("on"); }
-function ring(x, z, r, col) { X.sea.fx.push({ x, z, r, col, t: 0 }); }
-function hurtEn(e, amt, kx, kz) {
-  const s = X.sea; if (e.dead) return; const crit = Math.random() < .15; if (crit) amt *= 2; e.hp -= amt; e.x += kx; e.z += kz; e.wind = 0; popText(e.x, 3, e.z, (crit ? "💥" : "") + Math.round(amt), crit ? "#ffd54a" : s.fruit ? "#ffb347" : "#fff", crit); sound(crit ? "clang" : "flip"); e.flash = .12; HS = .045; burst3(e.x, 2, e.z, 8, [1, .9, .5], 6, 4);
-  if (e.hp > 0) return; e.dead = true; e.die = .5; burst3(e.x, 1.5, e.z, 26, s.fruit ? s.fruit.col : [1, .55, .25], 9, 8); e.rt = e.boss ? 60 : 10; s.kills++; score = s.kills; sound("coin");
-  s.xp += 3 + e.k * 2 + (e.boss ? 40 : 0); const b = 8 + e.k * 4 + (e.boss ? 200 : 0); s.beli += b; popText(e.x, 4, e.z, "+฿" + b, "#ffe08a");
-  const q = s.quest; if (q && q.k === e.k && (q.boss ? e.boss : true)) { q.have++; if (q.have >= q.need) finishQuest(q); }
-  while (s.xp >= need(s.lvl)) { s.xp -= need(s.lvl); s.lvl++; s.pts += 3; s.max = maxHp(s.lvl); s.hp = s.max; sound("level"); toast(`LEVEL UP! Lv ${s.lvl}${s.lvl === 5 ? " — Skill X unlocked!" : s.lvl === 10 ? " — Skill C unlocked!" : ""}`); ring(s.x, s.z, 8, [1, .9, .3]); burst3(s.x, 1, s.z, 40, [1, .9, .3], 3, 11); saveSeas(); }
-}
-function finishQuest(q) {
-  const s = X.sea, k = q.k; s.quest = null; s.done.add(k); s.xp += 25 * k + 20; s.beli += 150 * k; sound("win"); toast(`Quest complete! +${25 * k + 20} XP, +฿${150 * k}`);
-  if (k % 3 === 0) { s.fruit = FRU[k / 3 - 1]; if (!s.fruits.includes(s.fruit.n)) s.fruits.push(s.fruit.n); setTimeout(() => toast(`You found the ${s.fruit.n} Capy Fruit! Skills powered up ×${s.fruit.m}`), 1800); }
-  while (s.xp >= need(s.lvl)) { s.xp -= need(s.lvl); s.lvl++; s.pts += 3; s.max = maxHp(s.lvl); s.hp = s.max; }
-  saveSeas(); stageCheck(1 + s.done.size);
-}
-function aoe(r, mult, push = 3) { const s = X.sea; for (const e of s.en) { const dx = e.x - s.x, dz = e.z - s.z, d = Math.hypot(dx, dz) || 1; if (!e.dead && d < r + e.r) hurtEn(e, Math.round(pdmg(s.lvl) * mult), dx / d * push, dz / d * push); } }
-function useSkill(k) {
-  const s = X.sea; if (s.lvl < SK[k].lv || s.cds[k] > 0) return; s.cds[k] = SK[k].cd; const col = s.fruit ? s.fruit.col : [.92, .96, 1], m = s.fruit ? s.fruit.m : 1;
-  if (k === "z") { ring(s.x, s.z, 7, col); burst3(s.x, 1, s.z, 30, col, 8, 5); aoe(7, 2 * m); sound("whoosh"); }
-  if (k === "x") { s.dash = .22; s.inv = .4; ring(s.x, s.z, 4, col); sound("dash"); }
-  if (k === "c") { ring(s.x, s.z, 11, col); setTimeout(() => ring(s.x, s.z, 6, col), 120); aoe(11, 3.4 * m, 5); sound("boom"); CAM.shake = .6; burst3(s.x, 1, s.z, 50, col, 12, 9); }
-}
-function say(n, t) { const e = $("#hud-say"); e.hidden = false; e.innerHTML = `<b>${n}</b> ${t}`; clearTimeout(say.t); say.t = setTimeout(() => e.hidden = true, 3800); sound("talk"); }
-function seasInteract() {
-  const s = X.sea; if (s.ns) { s.shop = s.ns; renderShop(); $("#shop").hidden = false; sound("click"); return; }
-  const k = s.near; if (!k) return;
-  if (s.done.has(k)) return say("Captain Pip", `You already cleared Island ${k}. On to Island ${Math.min(10, k + 1)}!`);
-  if (k > 1 && !s.done.has(k - 1)) return say("Captain Pip", `Island ${k} is too dangerous for now. Clear Island ${k - 1} first!`);
-  if (s.quest && s.quest.k === k) return say("Captain Pip", `Keep fighting! ${s.quest.have}/${s.quest.need} done.`);
-  const boss = k === 5 || k === 10; s.quest = { k, boss, need: boss ? 1 : 3 + k, have: 0 }; sound("quest");
-  say("Captain Pip", boss ? `The boss of Island ${k} terrorizes us! Defeat it!` : `Ahoy! Defeat ${3 + k} pirates on this island and I'll reward you!`);
-}
-function closeShop() { X.sea.shop = ""; $("#shop").hidden = true; }
-function renderShop() {
-  const s = X.sea, b = $("#shop-body"); $("#shop-beli").textContent = "฿" + s.beli;
-  if (s.shop === "smith") { $("#shop-title").textContent = "⚔️ Blacksmith Barnaby"; b.innerHTML = WEAPONS.map((w, i) => `<div class="shop-row"><i style="background:rgb(${w.c.map(v => v * 255 | 0)})"></i><span><b>${w.n}</b><small>Damage ×${w.m}</small></span>${s.owned.includes(i) ? (s.wp === i ? "<em>Equipped</em>" : `<button data-act="eq:${i}">Equip</button>`) : `<button data-act="buy:${i}" ${s.beli < w.p ? "disabled" : ""}>฿${w.p}</button>`}</div>`).join("") + `<div class="shop-row"><i style="background:#e05a5a"></i><span><b>Health Potion</b><small>Heals 50% · press H · you own ${s.pots}</small></span><button data-act="pot" ${s.beli < 60 ? "disabled" : ""}>฿60</button></div>`; }
-  else { $("#shop-title").textContent = "🍎 Fruit Dealer Mira"; b.innerHTML = `<div id="roll-out" class="roll-out" style="color:${s.rc || "#fff"}">${s.rt || "Roll for a Capy Fruit!"}</div><button class="roll-btn" data-act="roll" ${s.beli < 500 || s.rolling ? "disabled" : ""}>Roll — ฿500</button><p class="shop-note">Common 55% · Uncommon 28% · Rare 13% · Legendary 4%. Duplicates refund ฿250.</p>` + s.fruits.map(n => { const f = FRU.find(q => q.n === n); return `<div class="shop-row"><i style="background:rgb(${f.col.map(v => v * 255 | 0)})"></i><span><b style="color:${RCOL[f.r]}">${f.n}</b><small>${RAR[f.r]} · skills ×${f.m}</small></span>${s.fruit && s.fruit.n === n ? "<em>Equipped</em>" : `<button data-act="fruit:${n}">Equip</button>`}</div>`; }).join(""); }
-}
-function rollFruit() {
-  const s = X.sea; if (s.beli < 500 || s.rolling) return; s.beli -= 500; s.rolling = true; renderShop();
-  const r = Math.random() * 100, rar = r < 55 ? 0 : r < 83 ? 1 : r < 96 ? 2 : 3, pool = FRU.filter(f => f.r === rar), f = pool[Math.floor(Math.random() * pool.length)], out = $("#roll-out"); let n = 0;
-  const iv = setInterval(() => { const x = FRU[Math.floor(Math.random() * FRU.length)]; out.textContent = x.n; out.style.color = RCOL[x.r]; sound("tick");
-    if (++n > 14) { clearInterval(iv); s.rolling = false; const dup = s.fruits.includes(f.n); s.rt = `${RAR[f.r]}: ${f.n}!` + (dup ? " (duplicate +฿250)" : " NEW!"); s.rc = RCOL[f.r]; sound(f.r >= 2 ? "level" : "reveal"); if (dup) s.beli += 250; else { s.fruits.push(f.n); s.fruit = f; } saveSeas(); if (s.shop) renderShop(); } }, 90);
-}
-$("#shop-close").addEventListener("click", () => closeShop());
-$("#shop-body").addEventListener("click", e => {
-  const a = e.target.closest("button")?.dataset.act; if (!a) return; const s = X.sea, [c, v] = a.split(":");
-  if (c === "buy") { const w = WEAPONS[v]; if (s.beli >= w.p && !s.owned.includes(+v)) { s.beli -= w.p; s.owned.push(+v); s.wp = +v; sound("cash"); } }
-  else if (c === "eq") { s.wp = +v; sound("clang"); } else if (c === "pot") { if (s.beli >= 60) { s.beli -= 60; s.pots++; sound("cash"); } }
-  else if (c === "roll") { rollFruit(); return; } else if (c === "fruit") { s.fruit = FRU.find(f => f.n === v); sound("clang"); }
-  saveSeas(); renderShop();
-});
-function updateSeas(dt) {
-  if (HS > 0) { HS -= dt; seasHud(); return; }
-  const s = X.sea; if (s.shop) { if (keys.has("e") && !s.eHeld) { closeShop(); s.eHeld = true; } if (!keys.has("e")) s.eHeld = false; seasHud(); return; }
-  s.t += dt; s.inv -= dt; s.swing -= dt; s.combat -= dt; if (s.swing > 0) burst3(s.x - Math.sin(s.yaw) * 2.6, 1.7, s.z - Math.cos(s.yaw) * 2.6, 1, [1, 1, .9], 2, 1); for (const k in s.cds) s.cds[k] = Math.max(0, s.cds[k] - dt);
-  CAM.yaw += ((keys.has("ArrowLeft") ? 1 : 0) - (keys.has("ArrowRight") ? 1 : 0)) * 1.9 * dt; CAM.pitch = clamp(CAM.pitch + ((keys.has("ArrowDown") ? 1 : 0) - (keys.has("ArrowUp") ? 1 : 0)) * 1.1 * dt, .25, 1.3);
-  CAM.shake = Math.max(0, (CAM.shake || 0) - dt * 2);
-  const fw = (keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0), rt = (keys.has("d") ? 1 : 0) - (keys.has("a") ? 1 : 0), sy = Math.sin(CAM.yaw), cy = Math.cos(CAM.yaw);
-  let mx = -sy * fw + cy * rt, mz = -cy * fw - sy * rt; const ml = Math.hypot(mx, mz); s.mv = ml > 0;
-  s.land = ISLS.some(i => Math.hypot(s.x - i.x, s.z - i.z) < i.r);
-  if (s.mv) { mx /= ml; mz /= ml; s.yaw = Math.atan2(-mx, -mz); }
-  if (s.dash > 0) { s.dash -= dt; burst3(s.x, 1, s.z, 2, s.fruit ? s.fruit.col : [.9, .95, 1], 2, 1); const fx = -Math.sin(s.yaw), fz = -Math.cos(s.yaw); s.x += fx * 42 * dt; s.z += fz * 42 * dt; for (const e of s.en) if (!e.dead && Math.hypot(e.x - s.x, e.z - s.z) < e.r + 2.2 && !s.hit.has(e)) { s.hit.add(e); hurtEn(e, Math.round(pdmg(s.lvl) * 1.5 * (s.fruit ? s.fruit.m : 1)), fx * 3, fz * 3); } }
-  else if (s.mv) { const sp = (s.land ? 10 : 6.5) * (s.swing > 0 ? .6 : 1) * (1 + s.st.spd * .03); s.x = clamp(s.x + mx * sp * dt, -190, 190); s.z = clamp(s.z + mz * sp * dt, -190, 190); }
-  if (keys.has("z")) useSkill("z"); if (keys.has("x")) { if (s.cds.x <= 0) s.hit = new Set(); useSkill("x"); } if (keys.has("c")) useSkill("c");
-  if (keys.has("h")) { if (!s.hh && s.pots > 0 && s.hp < s.max) { s.hh = 1; s.pots--; s.hp = Math.min(s.max, s.hp + s.max * .5); sound("gulp"); popText(s.x, 3.5, s.z, "+HP", "#7ee081"); burst3(s.x, 1.5, s.z, 20, [.4, 1, .5], 3, 7); saveSeas(); } } else s.hh = 0;
-  for (const [k, n] of [["1", "dmg"], ["2", "hp"], ["3", "spd"]]) { if (keys.has(k)) { if (!s.kh[k] && s.pts > 0) { s.kh[k] = 1; s.pts--; s.st[n]++; s.max = maxHp(s.lvl); s.hp = Math.min(s.max, s.hp + 8); sound("coin"); saveSeas(); } } else s.kh[k] = 0; }
-  if (keys.has("e") && !s.eHeld) { s.eHeld = true; seasInteract(); } if (!keys.has("e")) s.eHeld = false;
-  if (keys.has(" ") && s.swing <= 0) {
-    s.swing = .35; s.hit = new Set(); sound("slash"); let n = null, nd = 9; for (const e of s.en) { const d = Math.hypot(e.x - s.x, e.z - s.z); if (!e.dead && d < nd) { nd = d; n = e; } } if (n) s.yaw = Math.atan2(-(n.x - s.x), -(n.z - s.z));
-    const fx = -Math.sin(s.yaw), fz = -Math.cos(s.yaw); for (const e of s.en) { const ex = e.x - s.x, ez = e.z - s.z, d = Math.hypot(ex, ez) || 1; if (!e.dead && d < 5 + e.r && ex * fx + ez * fz > 0) hurtEn(e, Math.round(pdmg(s.lvl) * (s.fruit ? 1.2 : 1)), ex / d * 1.6, ez / d * 1.6); }
-  }
-  for (const e of s.en) {
-    if (e.dead) { e.die -= dt; e.rt -= dt; if (e.rt <= 0) { e.dead = false; e.hp = e.max; e.x = e.hx; e.z = e.hz; } continue; }
-    e.flash -= dt;
-    const d = Math.hypot(s.x - e.x, s.z - e.z), chase = d < 22, tx = chase ? s.x : e.hx, tz = chase ? s.z : e.hz, td = Math.hypot(tx - e.x, tz - e.z) || 1, reach = e.r + 1.6; e.yaw = Math.atan2(-(s.x - e.x), -(s.z - e.z)); e.cd -= dt;
-    if (e.wind > 0) { e.wind -= dt; if (e.wind <= 0 && d < reach + .8 && s.inv <= 0) { const dm = e.boss ? 12 + e.k : Math.round(2 + e.k * 1.5); s.hp -= dm; s.inv = .7; s.combat = 4; popText(s.x, 3.5, s.z, "-" + dm, "#ff6b6b"); sound("hit"); hurtFlash(); if (s.hp <= 0) { s.beli = Math.floor(s.beli * .9); s.hp = s.max; s.x = 0; s.z = 8; s.inv = 2; toast("You were defeated! You wake up at home (-10% ฿)."); } } }
-    else if (chase && d > reach - .3) { const v = (e.boss ? 3.4 : 2.6 + e.k * .3) * dt; e.x += (tx - e.x) / td * v; e.z += (tz - e.z) / td * v; }
-    else if (!chase && td > 1) { e.x += (tx - e.x) / td * 1.5 * dt; e.z += (tz - e.z) / td * 1.5 * dt; }
-    if (chase && d < reach && e.cd <= 0 && e.wind <= 0) { e.wind = e.boss ? .7 : .5; e.cd = e.boss ? 1.6 : 1.3; }
-  }
-  if (s.land && s.combat <= 0 && s.hp < s.max) s.hp = Math.min(s.max, s.hp + dt * (Math.hypot(s.x, s.z) < 16 ? 10 : 2));
-  s.near = 0; for (let k = 1; k <= 10; k++) if (Math.hypot(s.x - ISLS[k].x, s.z - (ISLS[k].z + 12)) < 5) s.near = k; s.ns = Math.hypot(s.x - 8, s.z - 6) < 5 ? "smith" : Math.hypot(s.x + 3, s.z - 11) < 5 ? "dealer" : "";
-  CAM.tx = s.x; CAM.tz = s.z; const f = Math.min(1, dt * 7); CAM.x += (CAM.tx - CAM.x) * f; CAM.z += (CAM.tz - CAM.z) * f;
-  if (s.mv) { s.stepT = (s.stepT || 0) - dt; if (s.stepT <= 0) { s.stepT = .3; if (s.land) sound("step"); else { sound("splash"); burst3(s.x, .2, s.z, 4, [.9, .97, 1], 2, 3); } } }
-  if (s.fruit && Math.random() < .35) burst3(s.x, 1.8, s.z, 1, s.fruit.col, 1.5, 3);
-  for (const p of s.parts) { p.life -= dt; p.vy -= 14 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; } s.parts = s.parts.filter(p => p.life > 0 && p.y > -.5);
-  if (MP.on && MP.ws.readyState === 1 && performance.now() - MP.t > 100) { MP.t = performance.now(); MP.ws.send(JSON.stringify({ t: "pos", x: +s.x.toFixed(2), z: +s.z.toFixed(2), yaw: +s.yaw.toFixed(2), mv: s.mv, sw: s.swing > 0, lvl: s.lvl, fr: s.fruit ? FRU.findIndex(f => f.n === s.fruit.n) : -1 })); }
-  for (const f2 of s.fx) f2.t += dt; s.fx = s.fx.filter(f2 => f2.t < .5);
-  seasHud(); scoreDisplay.textContent = `LV ${s.lvl} · ${Math.max(0, Math.round(s.hp))}/${s.max} HP · QUESTS ${s.done.size}/10${MP.on ? ` · 🌐 ${MP.others.size + 1} online` : ""}`;
-}
-function seasHud() {
-  const s = X.sea, g = id => document.getElementById(id), q = s.quest;
-  g("hud-lv").textContent = "Lv " + s.lvl; g("hud-hp").style.width = Math.max(0, s.hp / s.max * 100) + "%"; g("hud-hpt").textContent = `${Math.max(0, Math.round(s.hp))} / ${s.max}`; g("hud-xp").style.width = s.xp / need(s.lvl) * 100 + "%"; g("hud-beli").textContent = "฿" + s.beli + " · ⚔ " + WEAPONS[s.wp].n + (s.fruit ? " · 🍎 " + s.fruit.n : "") + (s.pots ? " · 🧪" + s.pots + " (H)" : "");
-  g("hud-quest").innerHTML = q ? `<b>QUEST · Island ${q.k}</b><br>${q.boss ? "Defeat the boss" : "Defeat pirates"}: ${q.have}/${q.need}` : `<b>No quest</b><br>Find Captain Pip on Island 1 and press E`; if (s.pts) g("hud-quest").innerHTML += `<br><b>★ ${s.pts} points: 1 Melee · 2 Health · 3 Speed</b>`;
-  document.querySelectorAll("[data-sk]").forEach(b => { const k = b.dataset.sk, locked = s.lvl < SK[k].lv; b.style.setProperty("--cd", locked ? 1 : s.cds[k] / SK[k].cd); b.classList.toggle("locked", locked); b.title = locked ? `Unlocks at Lv ${SK[k].lv}` : ""; });
-  const pr = g("hud-prompt"); pr.hidden = !(s.near || s.ns); if (s.ns) pr.textContent = s.ns === "smith" ? "E — Blacksmith (swords & potions)" : "E — Fruit Dealer (roll for Capy Fruits)"; else if (s.near) pr.textContent = s.near > 1 && !s.done.has(s.near - 1) ? `🔒 Island ${s.near} — clear Island ${s.near - 1} first` : `E — Talk to Captain Pip · Island ${s.near} (suggested Lv ${s.near * 3 - 2})`;
-  const m = g("minimap").getContext("2d"); m.clearRect(0, 0, 120, 120); m.fillStyle = "#1d5f8f"; m.beginPath(); m.arc(60, 60, 60, 0, 7); m.fill(); const sc = 60 / 150, P = (x, z) => [60 + (x - s.x) * sc, 60 + (z - s.z) * sc];
-  ISLS.forEach((I, i) => { const [x, z] = P(I.x, I.z); m.fillStyle = s.done.has(i) ? "#e8c84a" : i ? "#5fae5f" : "#d8c27a"; m.beginPath(); m.arc(x, z, I.r * sc, 0, 7); m.fill(); if (q && q.k === i) { m.strokeStyle = "#fff"; m.lineWidth = 2; m.beginPath(); m.arc(x, z, I.r * sc + 2 + Math.sin(s.t * 5), 0, 7); m.stroke(); } });
-  m.fillStyle = "#ff5a5a"; for (const e of s.en) if (!e.dead) { const [x, z] = P(e.x, e.z); if (Math.hypot(x - 60, z - 60) < 58) m.fillRect(x - 1, z - 1, e.boss ? 4 : 2, e.boss ? 4 : 2); }
-  m.fillStyle = "#fff"; m.beginPath(); m.arc(60, 60, 3, 0, 7); m.fill();
-}
+// ---- Bee Swarm: 3D honey-farming game (WebGL) ----
+let beeSave = null; try { beeSave = JSON.parse(localStorage.getItem("capyBee") || "null"); } catch {}
+const CAM = { yaw: 0, pitch: .7, dist: 20, x: 0, z: 14 }, COL = { w: [1, 1, .95], r: [.95, .27, .27], b: [.3, .52, .95] }, css = c => `rgb(${c.map(v => v * 255 | 0)})`;
+const ZONES = [{ n: "Starting Area", need: 0, zmin: -30 }, { n: "5-Bee Zone", need: 5, zmin: -72 }, { n: "10-Bee Zone", need: 10, zmin: -135 }];
+const FIELDS = [["Sunflower Field", "w", 24, -10, 3], ["Dandelion Field", "w", -24, -10, 3], ["Mushroom Field", "r", -26, -52, 4], ["Blue Flower Field", "b", 26, -52, 4], ["Strawberry Field", "r", -26, -98, 5], ["Bamboo Field", "b", 26, -98, 5], ["Pine Tree Forest", "w", 0, -114, 6]].map(([n, col, x, z, rich]) => ({ n, col, x, z, rich }));
+const BAG = [200, 500, 1200, 3000], BAGN = ["Pouch", "Jar", "Backpack", "Giant Bag"], BAGP = [0, 400, 1500, 5000], TOOL = [{ n: "Scooper", r: 3.2, a: 1 }, { n: "Rake", r: 4, a: 2 }, { n: "Clippers", r: 5, a: 3 }, { n: "Magnet Staff", r: 6.5, a: 5 }], TOOLP = [0, 300, 1200, 4000];
+const eggPrice = s => 150 + 120 * Math.max(0, s.bees.length - 3), bagUsed = s => s.bag.w + s.bag.r + s.bag.b, mixc = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 function rig(x, y, z, yaw) { const c = Math.cos(yaw), n = Math.sin(yaw), mk = f => (ox, oy, oz, sx, sy, sz, col, ya = 0) => { GY = yaw + ya; f(x + c * ox + n * oz, y + oy, z - n * ox + c * oz, sx, sy, sz, col); }, P = mk(box); P.b = mk(ball); return P; }
-const mixc = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
-function drawCapyModel(s, t) {
-  OUT = true;
-  const Y0 = (s.land ? 1.15 : .05 + Math.sin(t * 3) * .12) + (s.mv ? Math.abs(Math.sin(t * 14)) * .15 : 0), P = rig(s.x, Y0, s.z, s.yaw), w = s.mv ? Math.sin(t * 14) * .3 : 0;
-  const br = Math.sin(t * 2.2) * .03, bl = t % 4 < .12 ? .2 : 1, F = [.66, .46, .3], D = [.42, .29, .19], H = [.73, .53, .37], BL = [.88, .7, .5], R = s.coat || [.78, .16, .18], K = [.1, .1, .14], W = [1, 1, 1], G = [.95, .8, .25];
-  for (const [lx, lz, ph] of [[-.5, -.7, 1], [.5, -.7, -1], [-.5, .7, -1], [.5, .7, 1]]) { P.b(lx, .4 + w * ph * .5, lz, .42, .74, .42, D); P.b(lx, .12, lz - .06, .5, .26, .62, K); }
-  P.b(0, 1.02 + br, 0, 1.6, 1.25 + br, 2.5, F); P.b(0, .66, 0, 1.15, .6, 2, BL); P.b(0, 1.14, .5, 1.66, 1.05, 1.5, R); P.b(0, 1.62, -.4, 1.5, .34, .8, R); P(0, .86, .2, 1.54, .15, 1.2, K); P(0, .86, -.42, .3, .2, .06, G); P(0, 1.1, -.36, .12, .12, .06, G); P.b(Math.sin(t * 5) * .12, .9, 1.32, .4, .4, .4, D);
-  P.b(0, 1.5, -1.3, 1.2, 1.1, 1.2, H); P.b(-.55, 1.38, -1.4, .3, .5, .6, H); P.b(.55, 1.38, -1.4, .3, .5, .6, H); P.b(0, 1.2, -1.95, .78, .6, .65, BL); P.b(0, 1.36, -2.3, .3, .24, .2, [.15, .1, .08]);
-  P.b(-.3, 1.72, -1.84, .26, .28 * bl, .14, W); P.b(.3, 1.72, -1.84, .26, .28 * bl, .14, W); P.b(-.3, 1.72, -1.92, .14, .17 * bl, .1, K); P.b(.3, 1.72, -1.92, .14, .17 * bl, .1, K); P(-.28, 1.9, -1.8, .24, .06, .06, D); P(.28, 1.9, -1.8, .24, .06, .06, D);
-  P.b(-.4, 2.0, -1.1, .3, .38, .24, D); P.b(.4, 2.0, -1.1, .3, .38, .24, D);
-  P(0, 2.12, -1.3, 1.6, .1, 1.4, K); P.b(0, 2.46, -1.3, 1.05, .64, .98, K); P(0, 2.24, -1.3, 1.03, .1, .95, R); P(0, 2.43, -1.8, .24, .24, .05, W); P(.5, 2.62, -1.2, .1, .55, .12, [.9, .2, .2], .3 + Math.sin(t * 6) * .25);
-  P(Math.sin(t * 7) * .12, 1.55, .9, .32, .12, 1.1, R, .1);
-  const wp = WEAPONS[s.wp || 0], L = wp.len;
-  if (s.swing > 0) { const a = -1.3 + (1 - s.swing / .35) * 2.6, sa = Math.sin(a), ca = Math.cos(a); P(sa * L * .7 + .2, 1.2, -ca * L * .7, .22, .22, L, wp.c, a); P(sa * .8 + .2, 1.2, -ca * .8, .75, .15, .15, G, a); if (wp.p > 800) P(sa * L * .7 + .2, 1.2, -ca * L * .7, .42, .42, L * 1.05, mixc(wp.c, [1, 1, 1], .5), a); }
-  else { P(-.85, .95, .2, .16, .16, L * .55, wp.c); P(-.85, 1, -.6, .24, .2, .2, G); }
-  P.b(0, 1.45, -.78, .16, .16, .1, G); P.b(0, 1.15, -.85, .16, .16, .1, G); P.b(.3, 1.72, -1.95, .3, .3 * bl, .1, [.08, .08, .1]); P.b(0, .5, 1.1, 1.3, .7, .6, R);
-  if (s.fruit) for (let i = 0; i < 3; i++) { const a = t * 3 + i * 2.1; P(Math.cos(a) * 1.9, 2.8 + Math.sin(t * 2 + i) * .25, Math.sin(a) * 1.9, .35, .35, .35, s.fruit.col); }
+function proj(x, y, z) { const c = VPM, w = c[3] * x + c[7] * y + c[11] * z + c[15]; return [(c[0] * x + c[4] * y + c[8] * z + c[12]) / w, (c[1] * x + c[5] * y + c[9] * z + c[13]) / w, w]; }
+function popText(x, y, z, txt, col) { if (!VPM) return; const [sx, sy, w] = proj(x, y, z); if (w <= 0) return; const p = document.createElement("span"); p.className = "pop"; p.textContent = txt; p.style.color = col; p.style.left = (sx + 1) * 50 + "%"; p.style.top = (1 - sy) * 50 + "%"; $("#canvas-wrap").appendChild(p); setTimeout(() => p.remove(), 900); }
+const LAB = new Map();
+function label(id, txt, x, y, z) { let e = LAB.get(id); if (!e) { e = document.createElement("span"); e.className = "nametag"; $("#canvas-wrap").appendChild(e); LAB.set(id, e); } const [sx, sy, w] = proj(x, y, z); if (w <= 0 || w > 90 || Math.abs(sx) > 1.2) { e.style.display = "none"; return; } e.style.display = ""; e.textContent = txt; e.style.left = (sx + 1) * 50 + "%"; e.style.top = (1 - sy) * 50 + "%"; }
+function clearLabels() { LAB.forEach(e => e.remove()); LAB.clear(); }
+function spark(x, y, z, n, col, up = 5) { const s = X.bee; if (!s || !prefs.vfx || prefs.reduceMotion) return; for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = 2 + Math.random() * 3; s.parts.push({ x, y, z, vx: Math.cos(a) * v, vy: up * (.4 + Math.random()), vz: Math.sin(a) * v, life: .5 + Math.random() * .4, col, sz: .15 + Math.random() * .2 }); } if (s.parts.length > 160) s.parts.splice(0, s.parts.length - 160); }
+function initBee() {
+  const sv = beeSave || {}, fl = [];
+  FIELDS.forEach((F, fi) => { for (let i = 0; i < 6; i++) for (let k = 0; k < 6; k++) fl.push({ x: F.x + (i - 2.5) * 2.6 + Math.sin(i * 7 + k * 3 + fi) * .5, z: F.z + (k - 2.5) * 2.6 + Math.cos(i * 5 + k * 11 + fi) * .5, col: F.col, p: F.rich, max: F.rich, rg: 0, ph: i + k }); });
+  const bees = (sv.bees || ["w", "r", "b"]).map((t, i) => ({ t, x: i * 2, y: 3, z: 12, yaw: 0, tgt: null, tm: 0, ct: 0 }));
+  X.bee = { x: 0, z: 14, yaw: Math.PI, honey: sv.honey || 0, total: sv.total || 0, bag: { w: 0, r: 0, b: 0 }, bagLv: sv.bagLv || 0, toolLv: sv.toolLv || 0, fl, bees, conv: false, t: 0, cd: 0, swing: 0, mv: false, parts: [], gate: [0, 0], eH: false, shop: false, tk: 0 };
+  Object.assign(CAM, { yaw: 0, pitch: .7, dist: 20, x: 0, z: 14 }); $("#shop").hidden = true;
 }
-function drawEnemy(e, t) {
-  OUT = true;
-  const sc = (e.boss ? 2.2 : 1) * (e.dead ? Math.max(.05, e.die / .5) : 1), y = 1.15 + Math.sin(t * 5 + e.x) * .05, Q = rig(e.x, y, e.z, e.yaw), P = (ox, oy, oz, sx, sy, sz, c, ya) => Q(ox * sc, oy * sc, oz * sc, sx * sc, sy * sc, sz * sc, c, ya), fl = Math.max(e.wind > 0 ? .55 : 0, e.flash > 0 ? .75 : 0), wl = e.wind > 0 ? .5 : 0, W = [1, 1, 1], K = [.08, .08, .1];
-  P.b = (ox, oy, oz, sx, sy, sz, c, ya) => Q.b(ox * sc, oy * sc, oz * sc, sx * sc, sy * sc, sz * sc, c, ya);
-  if (e.type === "crab") {
-    const c = mixc(e.boss ? [.5, .2, .7] : [.85, .3, .25], W, fl), d = mixc([.65, .15, .15], W, fl), sn = Math.abs(Math.sin(t * 6)) * .15;
-    P.b(0, .62, 0, 2.1, 1.05, 1.8, c);
-    for (let i = 0; i < 3; i++) for (const sd of [-1, 1]) P(sd * 1.05, .28, -.5 + i * .55, .75, .14, .16, d);
-    for (const sd of [-1, 1]) { P(sd * 1.1, .8 + wl, -.9, .25, .25, .8, c); P.b(sd * 1.1, .95 + wl, -1.5, .7, .3 + sn, .6, d); P(sd * .4, 1.2, -.7, .1, .45, .1, c); P.b(sd * .4, 1.5, -.7, .3, .3, .3, W); P(sd * .4, 1.5, -.82, .1, .1, .1, K); }
-  } else if (e.type === "skel") {
-    const b = mixc([.92, .9, .8], [1, .5, .5], fl), sw = Math.sin(t * 5 + e.z) * .08;
-    for (const sd of [-1, 1]) { P(sd * .25, .55, 0, .17, 1.1, .17, b); P(sd * .25, .05, -.1, .26, .12, .36, b); P(sd * .7, 1.5, 0, .15, .8, .15, b); }
-    P(0, 1.15, 0, .8, .25, .45, b); P(0, 1.75, 0, .9, .9, .5, b); for (let i = 0; i < 3; i++) P(0, 1.5 + i * .25, -.02, .92, .07, .53, [.25, .22, .2]); P.b(0, 2.55, 0, .72, .66, .66, b); P(-.15, 2.6, -.28, .14, .14, .05, K); P(.15, 2.6, -.28, .14, .14, .05, K); P(0, 2.3, -.28, .3, .08, .05, K);
-    P(0, 2.9, 0, 1.1, .12, .95, K); P(0, 3.1, 0, .6, .3, .6, K); P(.8, 1.4 + wl * 1.5, -.7 - wl, .1, .1, 1.4, [.72, .74, .8], sw);
-  } else {
-    const sk = mixc([.85, .65, .5], W, fl), sh = mixc([.2, .3, .65], W, fl), sn = Math.sin(t * 4 + e.x) * .06;
-    for (const sd of [-1, 1]) { P(sd * .45, .6, 0, .6, 1.2, .6, [.15, .15, .22]); P(sd * 1.25, 1.7 - wl, 0, .6, 1.3, .6, sk); P.b(sd * 1.25, 1 + wl * 1.2, -.3 - wl, .95, .85, .95, mixc([.3, .25, .25], W, fl)); }
-    P.b(0, 1.9 + sn, 0, 2.1, 1.8, 1.4, sh); for (let i = 0; i < 3; i++) P(0, 1.4 + i * .5 + sn, -.02, 1.92, .12, 1.22, W); P.b(0, 3.05 + sn, -.1, 1.05, 1, 1, sk); P(0, 3.55 + sn, -.1, 1.05, .25, 1, W); P(-.22, 3.1 + sn, -.58, .16, .14, .06, K); P(.22, 3.1 + sn, -.58, .16, .14, .06, K); P(0, 2.85 + sn, -.58, .4, .1, .06, [.4, .2, .15]);
-  }
-  OUT = false; GY = 0; if (e.dead) return; box(e.x, y + 3.6 * sc + (e.type === "brute" ? .8 : 0), e.z, 2.2 * sc, .2, .2, [.2, .08, .08]); box(e.x - (1 - e.hp / e.max) * 1.1 * sc, y + 3.6 * sc + (e.type === "brute" ? .8 : 0), e.z + .05, 2.2 * sc * e.hp / e.max, .2, .2, e.boss ? [.9, .2, .8] : [.95, .25, .25]);
+function saveBee() { const s = X.bee; if (!s) return; beeSave = { honey: Math.floor(s.honey), total: Math.floor(s.total), bees: s.bees.map(b => b.t), bagLv: s.bagLv, toolLv: s.toolLv }; try { localStorage.setItem("capyBee", JSON.stringify(beeSave)); } catch {} saveProgress(); }
+function hatch(s) { const r = Math.random(), t = r < .5 ? "w" : r < .75 ? "r" : "b", n = s.bees.length; s.bees.push({ t, x: s.x, y: 3, z: s.z, yaw: 0, tgt: null, tm: 0, ct: 0 }); sound("reveal"); toast(`You hatched a ${t === "w" ? "White" : t === "r" ? "Red" : "Blue"} Bee! 🐝`); spark(s.x, 3, s.z, 24, COL[t], 8);
+  if (n + 1 === 5 || n + 1 === 10) setTimeout(() => { sound("level"); toast(`🔓 ${ZONES[n + 1 === 5 ? 1 : 2].n} unlocked!`); }, 1200); }
+function openBeeShop() { X.bee.shop = true; renderBeeShop(); $("#shop").hidden = false; sound("click"); }
+function closeBeeShop() { if (X.bee) X.bee.shop = false; $("#shop").hidden = true; }
+function renderBeeShop() {
+  const s = X.bee, nb = s.bagLv + 1, nt = s.toolLv + 1, row = (ic, t, sm, act, p, dis) => `<div class="shop-row"><i style="background:${ic}"></i><span><b>${t}</b><small>${sm}</small></span>${act ? `<button data-act="${act}" ${dis ? "disabled" : ""}>🍯${p}</button>` : "<em>MAX</em>"}</div>`;
+  $("#shop-title").textContent = "🛒 Bee Shop"; $("#shop-beli").textContent = "🍯 " + Math.floor(s.honey);
+  $("#shop-body").innerHTML = row("#f6e6b8", "Basic Egg", `Hatches a random bee · hive ${s.bees.length}/50 · price rises each egg`, "egg", eggPrice(s), s.honey < eggPrice(s) || s.bees.length >= 50) + row("#c9a46a", nb < BAG.length ? `${BAGN[nb]}` : `${BAGN[s.bagLv]}`, nb < BAG.length ? `Backpack: ${BAG[s.bagLv]} → ${BAG[nb]} pollen` : "Best backpack owned", nb < BAG.length ? "bag" : "", BAGP[nb], s.honey < BAGP[nb]) + row("#9aa7b5", nt < TOOL.length ? TOOL[nt].n : TOOL[s.toolLv].n, nt < TOOL.length ? `Tool: ${TOOL[s.toolLv].n} → bigger reach & more pollen per swing` : "Best tool owned", nt < TOOL.length ? "tool" : "", TOOLP[nt], s.honey < TOOLP[nt]);
 }
-function drawNpc(x, z, id, t, s) {
-  const P = rig(x, 1.15, z, Math.atan2(-(s.x - x), -(s.z - z))), shop = typeof id === "string", coat = id === "smith" ? [.35, .35, .4] : id === "dealer" ? [.55, .2, .7] : [.15, .35, .7], hat = id === "smith" ? [.3, .2, .15] : id === "dealer" ? [.95, .8, .25] : [.95, .95, .9], br = Math.sin(t * 2 + x) * .04, sk = [.85, .65, .5], K = [.1, .1, .1];
-  OUT = true;
-  P.b(-.3, .5, 0, .5, 1, .5, [.2, .2, .25]); P.b(.3, .5, 0, .5, 1, .5, [.2, .2, .25]); P.b(0, 1.6 + br, 0, 1.4, 1.5, .95, coat); P.b(-.85, 1.55, 0, .45, 1.2, .45, coat); P.b(.85, 1.55, 0, .45, 1.2, .45, coat);
-  P.b(0, 2.7 + br, 0, .9, .85, .85, sk); P.b(-.2, 2.78, -.4, .14, .14, .08, K); P.b(.2, 2.78, -.4, .14, .14, .08, K); P.b(0, 3.2 + br, 0, 1.1, .4, 1.1, hat); P.b(0, 3.03, 0, 1.3, .12, 1.3, hat);
-  if (id === "smith") { P(1.1, 1.3, -.5, .25, 1.8, .25, [.75, .75, .8]); P(0, 1.1, -.55, 1.3, .7, .25, [.3, .2, .15]); }
-  else if (id === "dealer") P.b(0, 4.3 + Math.sin(t * 3) * .2, 0, .9, .9, .9, FRU[Math.floor(t / 1.2) % FRU.length].col);
-  else { const free = !s.done.has(id) && (id === 1 || s.done.has(id - 1)), act = s.quest && s.quest.k === id, y = Math.sin(t * 4) * .22; if (free && !act) { P(0, 4.6 + y, 0, .35, .95, .35, [1, .85, .2]); P.b(0, 3.9 + y, 0, .42, .42, .42, [1, .85, .2]); } else if (act) P.b(0, 4.3 + y, 0, .6, .6, .6, [.5, .8, 1]); }
-  OUT = false; GY = 0;
-}
-function drawSeas() {
-  const s = X.sea, t = performance.now() / 1000, sky = [.62, .82, .96]; GY = 0;
-  gl.viewport(0, 0, glc.width, glc.height); gl.clearColor(...sky, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.uniform3f(U.sky, ...sky);
-  const cp = Math.cos(CAM.pitch), sh = (CAM.shake || 0) * (Math.random() - .5);
-  camLook([CAM.x + Math.sin(CAM.yaw) * cp * CAM.dist + sh, 2 + Math.sin(CAM.pitch) * CAM.dist + sh, CAM.z + Math.cos(CAM.yaw) * cp * CAM.dist], [CAM.x, 2, CAM.z]);
-  box(CAM.x, -.6, CAM.z, 600, 1, 600, [.14 + .03 * Math.sin(t), .46, .72]);
-  for (let i = 0; i < 46; i++) { const fx = CAM.x + ((i * 37 + t * 2) % 120) - 60, fz = CAM.z + ((i * 53) % 110) - 55, w = 1.4 + Math.sin(t * 2 + i); box(fx, -.08 + Math.sin(t * 2 + i) * .05, fz, w * 2, .05, .4, [.82, .94, .99]); }
-  for (let i = 0; i < 8; i++) box(CAM.x + ((i * 61 + t * 1.5) % 220) - 110, 45, CAM.z - 70 + i * 9, 18, 2.5, 8, [1, 1, 1]);
-  ISLS.forEach((I, i) => {
-    const B = BIOME(i || 1); box(I.x, .3, I.z, 33, 1.2, 33, [.9, .82, .55]); box(I.x, .75, I.z, 27, .8, 27, B.g);
-    for (const [px, pz] of PALMS) { box(I.x + px, 2.6, I.z + pz, .5, 3, .5, [.5, .34, .2]); box(I.x + px, 4.3, I.z + pz, 3.4, .5, 3.4, B.t); box(I.x + px, 4.8, I.z + pz, 1.6, .4, 1.6, mixc(B.t, [1, 1, 1], .2)); }
-    for (const [px, pz] of ROCKS) { box(I.x + px, 1.6, I.z + pz, 2.2, 1.6, 2, [.5, .5, .55]); box(I.x + px + .5, 2.5, I.z + pz, 1.2, .8, 1.2, [.6, .6, .65]); }
-    if (i) { drawNpc(I.x, I.z + 12, i, t, s); box(I.x, 4.5, I.z, .25, 7, .25, [.4, .3, .2]); box(I.x + 1.4, 7, I.z, 2.6, 1.5, .1, s.done.has(i) ? [.95, .8, .25] : i > s.done.size + 1 ? [.5, .5, .55] : i === 10 ? [.5, .2, .7] : [.85, .25, .25]); }
-    else { drawNpc(8, 6, "smith", t, s); drawNpc(-3, 11, "dealer", t, s); box(-6, 2.2, 6, 5, 3, 4, [.7, .5, .3]); box(-6, 4.2, 6, 6, .6, 5, [.6, .25, .2]); box(-6, 1.8, 3.9, 1, 2, .2, [.3, .2, .12]); }
+$("#shop-close").addEventListener("click", closeBeeShop);
+$("#bee-shop-btn").addEventListener("click", () => { if (X.bee && !X.bee.shop) openBeeShop(); });
+$("#shop-body").addEventListener("click", e => { const a = e.target.closest("button")?.dataset.act, s = X.bee; if (!a || !s) return;
+  if (a === "egg" && s.honey >= eggPrice(s) && s.bees.length < 50) { s.honey -= eggPrice(s); hatch(s); } else if (a === "bag" && s.honey >= BAGP[s.bagLv + 1]) { s.honey -= BAGP[s.bagLv + 1]; s.bagLv++; sound("cash"); } else if (a === "tool" && s.honey >= TOOLP[s.toolLv + 1]) { s.honey -= TOOLP[s.toolLv + 1]; s.toolLv++; sound("cash"); }
+  saveBee(); renderBeeShop(); });
+function updateBee(dt) {
+  const s = X.bee, e = keys.has("e");
+  if (s.shop) { if (e && !s.eH) closeBeeShop(); s.eH = e; return; }
+  s.t += dt; s.cd -= dt; s.swing -= dt;
+  CAM.yaw += ((keys.has("ArrowLeft") ? 1 : 0) - (keys.has("ArrowRight") ? 1 : 0)) * 1.9 * dt; CAM.pitch = clamp(CAM.pitch + ((keys.has("ArrowDown") ? 1 : 0) - (keys.has("ArrowUp") ? 1 : 0)) * 1.1 * dt, .25, 1.3);
+  const fw = (keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0), rt = (keys.has("d") ? 1 : 0) - (keys.has("a") ? 1 : 0), sy = Math.sin(CAM.yaw), cy = Math.cos(CAM.yaw), mx = -sy * fw + cy * rt, mz = -cy * fw - sy * rt, ml = Math.hypot(mx, mz), zi = s.bees.length >= 10 ? 2 : s.bees.length >= 5 ? 1 : 0;
+  s.mv = ml > 0; if (s.mv) { s.x = clamp(s.x + mx / ml * 11 * dt, -62, 62); s.z = clamp(s.z + mz / ml * 11 * dt, ZONES[zi].zmin, 26); s.yaw = Math.atan2(-mx, -mz); } else s.z = Math.max(s.z, ZONES[zi].zmin);
+  const T = TOOL[s.toolLv], cap = BAG[s.bagLv];
+  if (s.cd <= 0) { s.cd = .4; let n = 0; for (const f of s.fl) { if (n >= 3 || bagUsed(s) >= cap) break; if (f.p <= 0 || Math.hypot(f.x - s.x, f.z - s.z) > T.r) continue; const g = Math.min(T.a, f.p, cap - bagUsed(s)); f.p -= g; s.bag[f.col] += g; n++; popText(f.x, 2, f.z, "+" + g, css(COL[f.col])); spark(f.x, 1.2, f.z, 5, COL[f.col]); } if (n) { s.swing = .3; sound("flip"); } }
+  s.bees.forEach((b, i) => {
+    if (b.tgt && (b.tgt.p <= 0 || bagUsed(s) >= cap)) { b.tgt.claim = null; b.tgt = null; }
+    if (!b.tgt && (b.tm -= dt) <= 0) { b.tm = .5; if (bagUsed(s) < cap) { let best = null, bd = 1e9; for (const f of s.fl) if (f.p > 0 && !f.claim && Math.hypot(f.x - s.x, f.z - s.z) < 24) { const d = Math.hypot(f.x - b.x, f.z - b.z) - (f.col === b.t ? 8 : 0); if (d < bd) { bd = d; best = f; } } if (best) { b.tgt = best; best.claim = b; } } }
+    let tx, ty, tz; if (b.tgt) { tx = b.tgt.x; ty = 2.4; tz = b.tgt.z; } else { const a = s.t * .9 + i * 2.1; tx = s.x + Math.cos(a) * 3.2; ty = 3.3 + Math.sin(s.t * 2 + i) * .5; tz = s.z + Math.sin(a) * 3.2; }
+    const k = 1 - Math.pow(.015, dt); b.yaw = Math.atan2(-(tx - b.x), -(tz - b.z)) || b.yaw; b.x += (tx - b.x) * k; b.y += (ty - b.y) * k; b.z += (tz - b.z) * k;
+    if (b.tgt && Math.hypot(b.tgt.x - b.x, b.tgt.z - b.z) < 1.4) { b.ct += dt; if (b.ct > .55) { b.ct = 0; const f = b.tgt, g = Math.min(cap - bagUsed(s), (f.col === b.t ? 2 : 1)); f.p -= 1; s.bag[f.col] += g; popText(f.x, 2.6, f.z, "+" + g, css(COL[f.col])); spark(f.x, 1.5, f.z, 4, COL[f.col]); } }
   });
-  const bob = Math.sin(t * 1.6) * .15; box(-24, .3 + bob, 8, 6, 1.8, 15, [.45, .28, .16]); box(-24, 1.5 + bob, 8, 5.4, .3, 14, [.6, .42, .25]); box(-24, 1 + bob, -.2, 3, 1.4, 2, [.55, .36, .2]); box(-24, 6 + bob, 8, .35, 9, .35, [.35, .24, .15]); box(-24, 7 + bob, 8, .2, 5, 4.4, [.97, .96, .9]); box(-24, 11 + bob, 8, .1, 1.4, 2.4, [.08, .08, .1]);
-  for (const e of s.en) if (!e.dead || e.die > 0) drawEnemy(e, t);
-  GY = 0; for (const p of s.parts) { const k = Math.max(.15, p.life * 2); ball(p.x, p.y, p.z, p.sz * k, p.sz * k, p.sz * k, p.col); }
-  for (const f of s.fx) { const k = f.t / .5, r = f.r * (.3 + k * .8) * 2; GY = 0; box(f.x, .9, f.z, r, .12 * (1 - k) + .02, r, f.col); box(f.x, 1.2, f.z, r * .6, .1 * (1 - k) + .02, r * .6, mixc(f.col, [1, 1, 1], .5)); }
-  mpDraw(t); if (!(s.inv > 0 && Math.floor(t * 14) % 2)) drawCapyModel(s, t); GY = 0; OUT = false;
+  for (const f of s.fl) if (f.p < f.max && (f.rg += dt) > 4) { f.p++; f.rg = 0; }
+  const pad = Math.hypot(s.x + 8, s.z - 8) < 5, shop = Math.hypot(s.x - 8, s.z - 8) < 5;
+  if (e && !s.eH) { if (shop) openBeeShop(); else if (pad && bagUsed(s) > 0) { s.conv = !s.conv; if (s.conv) sound("quest"); } } s.eH = e;
+  if (s.conv) { if (!pad || bagUsed(s) <= 0) { s.conv = false; saveBee(); } else { const u = bagUsed(s), amt = Math.min(u, 10 * s.bees.length * dt); for (const c of "wrb") s.bag[c] = Math.max(0, s.bag[c] - amt * s.bag[c] / u); s.honey += amt; s.total += amt; score = Math.floor(s.total); if ((s.tk += dt) > .22) { s.tk = 0; sound("tick"); spark(s.x, 2.6, s.z, 2, [1, .8, .2], 3); } } }
+  for (const p of s.parts) { p.life -= dt; p.vy -= 12 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; } s.parts = s.parts.filter(p => p.life > 0 && p.y > -.3);
+  ZONES.slice(1).forEach((Z, i) => { s.gate[i] += ((s.bees.length >= Z.need ? 1 : 0) - s.gate[i]) * Math.min(1, dt * 3); });
+  hudBee(s, pad, shop);
 }
-function drawSeas2D() { ctx.fillStyle = "#12304a"; ctx.fillRect(0, 0, 800, 450); ctx.fillStyle = "#fff"; ctx.font = "bold 20px system-ui"; ctx.textAlign = "center"; ctx.fillText("Capy Seas needs WebGL (try Chrome, Edge or Firefox).", 400, 225); ctx.textAlign = "left"; }
+function hudBee(s, pad, shop) {
+  const g = id => document.getElementById(id), cap = BAG[s.bagLv], u = bagUsed(s);
+  g("bh-honey").textContent = "🍯 " + Math.floor(s.honey); g("bh-bees").textContent = `🐝 ${s.bees.length}/50`; g("bh-zone").textContent = s.z > -30 ? ZONES[0].n : s.z > -72 ? ZONES[1].n : ZONES[2].n;
+  for (const c of "wrb") g("bg-" + c).style.width = s.bag[c] / cap * 100 + "%"; g("bh-bagt").textContent = `${Math.floor(u)} / ${cap}`;
+  const pr = g("bh-prompt"); pr.hidden = false; pr.textContent = s.conv ? "🍯 Making honey… (E to stop)" : shop ? "E — Open the Bee Shop" : pad ? (u > 0 ? "E — Make Honey" : "Collect pollen first!") : u >= cap ? "Bag full! Return to the hive pad" : ""; if (!pr.textContent) pr.hidden = true;
+  scoreDisplay.textContent = `HONEY ${Math.floor(s.honey)} · BEES ${s.bees.length}`;
+}
+function drawBee() {
+  const s = X.bee, t = performance.now() / 1000, sky = [.6, .82, .97]; GY = 0; OUT = false;
+  gl.viewport(0, 0, glc.width, glc.height); gl.clearColor(...sky, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.uniform3f(U.sky, ...sky);
+  const cp = Math.cos(CAM.pitch); CAM.x += (s.x - CAM.x) * .12; CAM.z += (s.z - CAM.z) * .12;
+  camLook([CAM.x + Math.sin(CAM.yaw) * cp * CAM.dist, 2 + Math.sin(CAM.pitch) * CAM.dist, CAM.z + Math.cos(CAM.yaw) * cp * CAM.dist], [CAM.x, 2, CAM.z]);
+  box(0, -.6, -50, 400, 1, 500, [.45, .75, .4]); box(0, -.5, -51, 130, 1, 42, [.38, .68, .36]); box(0, -.5, -103.5, 130, 1, 63, [.5, .46, .7]); box(0, -.45, 12, 44, 1, 36, [.9, .8, .55]);
+  box(0, 6, 25, 36, 12, 3, [.62, .42, .2]); box(0, 12.6, 25, 40, 1.6, 6, [.5, .25, .15]);
+  for (let i = 0; i < 50; i++) { const own = i < s.bees.length, c = own ? mixc(COL[s.bees[i].t], [1, .8, .2], .5) : [.42, .28, .14]; ball(-13.5 + (i % 10) * 3, 2.2 + Math.floor(i / 10) * 2, 23.3, 2.3, 2.3, .8, c); }
+  box(-8, .25, 8, 6, .3, 6, [1, .8, .2 + .15 * Math.sin(t * 4)]); box(-8, 2.5, 11, 2, 5, 2, [.9, .72, .15]); ball(-8, 5.4, 11, 2.4, 1.6, 2.4, [1, .85, .3]);
+  box(8, 1.1, 8, 4, 2.2, 3, [.6, .35, .2]); ball(8, 3.8 + Math.sin(t * 2) * .2, 8, 2.4, 3, 2.4, [.96, .92, .82]);
+  ZONES.slice(1).forEach((Z, i) => { const g = s.gate[i], z0 = ZONES[i].zmin; box(0, 3 * (1 - g) + .2, z0, 124, 6 * (1 - g) + .4, 1.5, g > .9 ? [.5, .85, .5] : [.85, .3, .3]); box(-62, 5, z0, 3, 10, 3, [.45, .3, .2]); box(62, 5, z0, 3, 10, 3, [.45, .3, .2]); });
+  for (let i = 0; i < 16; i++) { const x = (i % 2 ? 1 : -1) * (36 + (i * 7) % 20), z = 20 - i * 9.5; box(x, 2, z, .9, 4, .9, [.45, .3, .18]); ball(x, 5, z, 4.5, 4, 4.5, [.3, .6, .3]); }
+  for (let i = 0; i < 8; i++) box(CAM.x + ((i * 61 + t * 1.5) % 220) - 110, 45, CAM.z - 70 + i * 9, 18, 2.5, 8, [1, 1, 1]);
+  FIELDS.forEach(F => box(F.x, 0, F.z, 17, .16, 17, mixc(COL[F.col], [.4, .7, .35], .75)));
+  for (const f of s.fl) { if (Math.abs(f.z - CAM.z) > 60 || Math.abs(f.x - CAM.x) > 60) continue; const k = f.p > 0 ? .5 + .5 * f.p / f.max : .3, sw = Math.sin(t * 2 + f.ph) * .06; box(f.x, .55 * k + .05, f.z, .14, 1.1 * k, .14, [.25, .6, .25]); ball(f.x + sw, 1.1 * k + .25, f.z, .9 * k + .2, .5 * k + .15, .9 * k + .2, f.p > 0 ? COL[f.col] : [.5, .55, .45]); if (f.p > 0) ball(f.x + sw, 1.1 * k + .4, f.z, .35, .25, .35, [1, .85, .2]); }
+  const P = rig(s.x, 0, s.z, s.yaw); OUT = true; const u = bagUsed(s), fill = Math.min(1, u / BAG[s.bagLv]), dom = s.bag.r > s.bag.b && s.bag.r > s.bag.w ? COL.r : s.bag.b > s.bag.w ? COL.b : COL.w, sw = s.swing > 0 ? Math.sin((1 - s.swing / .3) * 3.14) * 1.1 : 0, ya = sw * .7;
+  P.b(0, 1.5 + (s.mv ? Math.abs(Math.sin(t * 12)) * .12 : 0), 0, 1.7, 2.8, 1.7, [.25, .5, .95]); P.b(-.35, 2.3, -.7, .4, .45, .3, [1, 1, 1]); P.b(.35, 2.3, -.7, .4, .45, .3, [1, 1, 1]); P.b(-.35, 2.3, -.88, .2, .25, .16, [.1, .1, .1]); P.b(.35, 2.3, -.88, .2, .25, .16, [.1, .1, .1]);
+  P(0, 1.6, .95, 1.3, 1.5, .6, [.85, .82, .75]); if (fill > 0) P(0, .9 + .7 * fill, 1.02, 1.1, 1.4 * fill, .5, dom);
+  P(1.1, 1.3, -1, .16, .16, 2.2, [.6, .4, .25], ya); P.b(1.1 - Math.sin(ya) * 1.1, 1.3, -1 - Math.cos(ya) * 1.1, .9, .4, .9, [.8, .82, .88]);
+  s.bees.forEach((b, i) => { const B = rig(b.x, b.y, b.z, b.yaw || 0), fl = Math.sin(t * 40 + i) * .3; B.b(0, 0, 0, .9, .8, 1.2, [1, .82, .15]); B.b(0, 0, .25, .95, .82, .35, [.15, .12, .1]); B.b(0, 0, -.65, .6, .6, .6, [.15, .12, .1]); B.b(0, .5, 0, .5, .3, .5, COL[b.t]); B.b(-.55, .5 + fl, 0, .9, .08, .5, [.9, .97, 1]); B.b(.55, .5 - fl, 0, .9, .08, .5, [.9, .97, 1]); });
+  OUT = false; GY = 0;
+  for (const p of s.parts) { const k = Math.max(.15, p.life * 2); ball(p.x, p.y, p.z, p.sz * k, p.sz * k, p.sz * k, p.col); }
+  FIELDS.forEach((F, i) => label("f" + i, F.n, F.x, 5, F.z)); ZONES.slice(1).forEach((Z, i) => label("g" + i, s.bees.length >= Z.need ? `✅ ${Z.n}` : `🔒 ${Z.n}: needs ${Z.need} bees (${s.bees.length}/${Z.need})`, 0, 9, ZONES[i].zmin));
+  label("hv", "🐝 Your Hive", 0, 15, 25); label("pd", "🍯 Make Honey", -8, 7.5, 8); label("sh", "🛒 Bee Shop", 8, 6.5, 8);
+}
 // ---- Pond Snake ----
 function placeFood() { const s = X.s; do { s.food = [Math.floor(Math.random() * 40), Math.floor(Math.random() * 22)]; } while (s.body.some(b => b[0] === s.food[0] && b[1] === s.food[1])); }
 function updateSnake(dt) {
@@ -919,7 +787,7 @@ function drawBricks() {
   ctx.shadowBlur = prefs.vfx ? 14 : 0; ctx.shadowColor = "#2f7d52"; roundRect(m.x, 410, m.w, 14, 7, "#3f8a60"); ctx.shadowBlur = 0; ctx.font = "16px system-ui"; ctx.fillText("🐹", m.x + m.w / 2 - 9, 406);
   ctx.fillStyle = "#c0392b"; ctx.beginPath(); ctx.arc(m.bx, m.by, 8, 0, 7); ctx.fill(); if (!m.live) { ctx.fillStyle = "#6b4a2e"; ctx.font = "12px system-ui"; ctx.fillText("Press Space to launch", 330, 440); }
 }
-function drawGame(){if(currentGame==="Capy Hop")drawCapyHop();else if(currentGame==="Neon Dodge")drawNeonDodge();else if(currentGame==="Cube Canyon"){if(!glc.hidden)drawGL();else drawCubeCanyon();}else if(currentGame==="Pocket Garden")drawGarden();else if(currentGame==="Snack Catch")drawSnackCatch();else if(currentGame==="Capy Blaster")drawBlaster();else if(currentGame==="Capy Seas"){if(!glc.hidden)drawSeas();else drawSeas2D();}else if(currentGame==="Pond Snake")drawSnake();else if(currentGame==="Capy Pong")drawPong();else if(currentGame==="Mud Bricks")drawBricks();}
+function drawGame(){if(currentGame==="Capy Hop")drawCapyHop();else if(currentGame==="Neon Dodge")drawNeonDodge();else if(currentGame==="Cube Canyon"){if(!glc.hidden)drawGL();else drawCubeCanyon();}else if(currentGame==="Pocket Garden")drawGarden();else if(currentGame==="Snack Catch")drawSnackCatch();else if(currentGame==="Capy Blaster")drawBlaster();else if(currentGame==="Bee Swarm")drawBee();else if(currentGame==="Pond Snake")drawSnake();else if(currentGame==="Capy Pong")drawPong();else if(currentGame==="Mud Bricks")drawBricks();}
 updateGames();
 
 // ---------- Accounts (stored in this browser only) ----------
@@ -934,7 +802,7 @@ async function hashPw(pw, salt) {
 function noteStage(n) { if (n > (stageBest[currentGame] || 0)) { stageBest[currentGame] = n; saveProgress(); } }
 function saveProgress() {
   if (!user) return;
-  try { const all = accounts(); if (!all[user]) return; all[user].data = { favorites: [...favorites], best: bestScores, stage: stageBest, prefs, seas: seasSave }; localStorage.setItem(ACC, JSON.stringify(all)); } catch {}
+  try { const all = accounts(); if (!all[user]) return; all[user].data = { favorites: [...favorites], best: bestScores, stage: stageBest, prefs, bee: beeSave }; localStorage.setItem(ACC, JSON.stringify(all)); } catch {}
 }
 function renderUser() {
   $("#profile-name").textContent = user || "Guest"; $(".profile-avatar").textContent = (user || "G")[0].toUpperCase();
@@ -943,7 +811,7 @@ function renderUser() {
 function loginAs(name, isNew) {
   user = name; try { localStorage.setItem(SES, name); } catch {}
   if (isNew) saveProgress();
-  else { const d = accounts()[name].data || {}; favorites = new Set(d.favorites || []); bestScores = { ...bestScores, ...(d.best || {}) }; stageBest = d.stage || {}; if (d.seas) seasSave = d.seas; prefs = { ...defaults, ...(d.prefs || {}) }; }
+  else { const d = accounts()[name].data || {}; favorites = new Set(d.favorites || []); bestScores = { ...bestScores, ...(d.best || {}) }; stageBest = d.stage || {}; if (d.bee) beeSave = d.bee; prefs = { ...defaults, ...(d.prefs || {}) }; }
   renderUser(); updateGames(); syncSettings();
   if (authDialog.open) authDialog.close();
   toast(isNew ? `Welcome, ${name}! Progress saves to your account.` : `Welcome back, ${name}!`);
@@ -981,7 +849,7 @@ function buddyReply(q) {
   if (g) return `${g}: ${GAME_INFO[g].description} Controls: ${GAME_INFO[g].controls.replace(/\s{2,}/g, " · ")}`;
   if (/^(hi|hey|hello|yo)\b/.test(q)) return "Hi! I'm Capy Buddy 🐹 Ask me about a game, its controls, or what to play next!";
   if (/shoot|blast|space/.test(q)) return "Try Capy Blaster! Move with WASD and hold Space to fire.";
-  if (/3d|sail|pirate|sea|island|rpg/.test(q)) return "Capy Seas is a 3D pirate adventure with 10 islands, and Cube Canyon is a 3D runner. Want the controls for either?";
+  if (/3d|bee|honey|pollen|flower/.test(q)) return "Bee Swarm is a 3D honey-farming game, and Cube Canyon is a 3D runner. Want the controls for either?";
   if (/relax|cozy|chill|calm/.test(q)) return "For chill vibes: Pocket Garden (memory match) or Pond Snake.";
   if (/puzzle|brain|memory/.test(q)) return "Pocket Garden and Mud Bricks are my puzzle picks.";
   if (/recommend|suggest|what should|bored|random|play/.test(q)) return `How about ${names[Math.floor(Math.random() * names.length)]}? Ask me about it for controls.`;
@@ -1001,4 +869,4 @@ $("#buddy-form").addEventListener("submit", async e => {
   setTimeout(() => buddyAdd(r || buddyReply(q), "bot"), 300);
 });
 
-try { $("#mp-url").value = localStorage.getItem("capyMpUrl") || "ws://localhost:8787"; } catch { $("#mp-url").value = "ws://localhost:8787"; }
+
