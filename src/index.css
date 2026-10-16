@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-page: #f5f7f2;
+    --surface: #ffffff;
+    --surface-secondary: #f8faf6;
+    --ink: #202820;
+    --muted: #7d877d;
+    --line: #e5eae1;
+    --green: #286c4b;
+    --green-dark: #1d5037;
+    --green-soft: #e5f0e5;
+  }
+
+  html.dark {
+    --bg-page: #111611;
+    --surface: #182018;
+    --surface-secondary: #202920;
+    --ink: #edf3e9;
+    --muted: #a0ada0;
+    --line: #2b382b;
+    --green: #8ed0a1;
+    --green-dark: #bdf0cb;
+    --green-soft: #243828;
+  }
+
+  body {
+    background-color: var(--bg-page);
+    color: var(--ink);
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+}
+
+.font-display {
+  font-family: 'Manrope', system-ui, sans-serif;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* DOM particle burst */
+.dom-burst-particle {
+  position: fixed;
+  z-index: 9999;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  pointer-events: none;
+  animation: dom-pop 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes dom-pop {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0.6) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(0) rotate(180deg);
+  }
+}
+
+/* Floating animation for Mascot & Stamps */
+@keyframes capy-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-capy-float {
+  animation: capy-float 4s ease-in-out infinite;
+}
+
+/* Custom scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

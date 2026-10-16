@@ -1,0 +1,28 @@
+[
+  {
+    "id": 1,
+    "username": "capy_tester",
+    "email": "tester@example.com",
+    "passwordHash": "newhash123",
+    "isGoogleAuth": false,
+    "createdAt": "2026-10-16T01:29:22.045Z",
+    "data": {
+      "favorites": [],
+      "bestScores": {},
+      "stageBest": {}
+    }
+  },
+  {
+    "id": 2,
+    "username": "capy_friend",
+    "email": "friend@example.com",
+    "passwordHash": "testhash",
+    "isGoogleAuth": false,
+    "createdAt": "2026-10-16T01:29:25.393Z",
+    "data": {
+      "favorites": [],
+      "bestScores": {},
+      "stageBest": {}
+    }
+  }
+]

@@ -1,0 +1,11 @@
+[
+  {
+    "id": "req_1792114169383_t1wet",
+    "fromId": 1,
+    "fromUsername": "capy_tester",
+    "toId": 2,
+    "toUsername": "capy_friend",
+    "status": "ACCEPTED",
+    "timestamp": 1792114169383
+  }
+]

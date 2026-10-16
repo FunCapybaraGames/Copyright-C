@@ -1,0 +1,6 @@
+{
+  "name": "Capybara Games",
+  "description": "Play great browser games with handcrafted sound effects, procedural music, vibrant visual effects, and charming capybara mini-games.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
